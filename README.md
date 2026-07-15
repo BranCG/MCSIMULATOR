@@ -6,7 +6,7 @@ Este proyecto contiene el núcleo de arquitectura C++ y los archivos de configur
 
 ---
 
-## 📁 Estructura del Proyecto C++ Generado
+## Estructura del Proyecto C++ Generado
 
 El proyecto está organizado siguiendo las convenciones de Unreal Engine para un desarrollo limpio en C++ y Blueprints:
 

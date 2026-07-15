@@ -1,0 +1,40 @@
+# Unreal Engine standard gitignore
+Binaries/
+Build/
+Intermediate/
+Saved/
+DerivedDataCache/
+FileOpenOrder/
+
+# Visual Studio files
+.vs/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.layout
+*.user
+*.suo
+*.ncb
+*.pdb
+
+# Rider files
+.idea/
+*.sln.DotSettings.user
+
+# Mac files
+.DS_Store
+
+# Package builds
+/Builds/
+/Android_ASTC/
+/Android_DXT/
+/Android_ETC2/
+/Windows/
+
+# Plugins build files
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+Plugins/*/Saved/

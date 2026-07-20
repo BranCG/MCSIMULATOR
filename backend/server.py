@@ -1,14 +1,37 @@
 import base64
 import os
 import wave
+import json
 import tempfile
 from flask import Flask, request, jsonify
-from openai import OpenAI
 
 app = Flask(__name__)
 
-# Instanciar cliente de OpenAI (asegúrate de tener la variable de entorno OPENAI_API_KEY)
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "TU_OPENAI_API_KEY_AQUI"))
+# Configuración de clientes de Inteligencia Artificial
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+# Intentar inicializar Gemini si hay clave disponible
+genai_client = None
+if GEMINI_KEY:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_KEY)
+        genai_client = genai
+        print("Backend configurado con Google Gemini Flash (Audio NATIVO).")
+    except ImportError:
+        print("Librería 'google-generativeai' no instalada. Ejecuta: pip install google-generativeai")
+
+# Intentar inicializar OpenAI como alternativa
+openai_client = None
+if OPENAI_KEY and not genai_client:
+    try:
+        from openai import OpenAI
+        openai_client = OpenAI(api_key=OPENAI_KEY)
+        print("Backend configurado con OpenAI Whisper + GPT-4o.")
+    except ImportError:
+        print("Librería 'openai' no instalada.")
+
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_speech():
@@ -28,7 +51,7 @@ def analyze_speech():
         if len(raw_pcm_bytes) == 0:
             return jsonify({"error": "Audio buffer is empty"}), 400
 
-        # 2. Crear archivo .wav temporal con encabezados RIFF legítimos
+        # 2. Crear archivo .wav temporal con encabezados RIFF
         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_wav:
             wav_path = temp_wav.name
 
@@ -38,57 +61,106 @@ def analyze_speech():
             wav_file.setframerate(sample_rate)
             wav_file.writeframes(raw_pcm_bytes)
 
-        # 3. Transcribir audio usando OpenAI Whisper API
-        with open(wav_path, "rb") as audio_file:
-            transcription_response = client.audio.transcriptions.create(
-                model="whisper-1",
-                file=audio_file,
-                language="es" # Idioma español por defecto
-            )
-        
-        transcript_text = transcription_response.text
+        analysis_json = {}
 
-        # Eliminar archivo temporal
+        # ----------------------------------------------------
+        # OPCIÓN 1: PROCESAMIENTO NATIVO CON GOOGLE GEMINI FLASH
+        # ----------------------------------------------------
+        if genai_client:
+            print("Procesando audio directamente con Gemini 1.5/2.0 Flash...")
+            
+            # Subir archivo de audio a la API de Gemini
+            audio_file = genai_client.upload_file(path=wav_path)
+
+            prompt = (
+                f"Analiza este audio de presentación oral en el contexto de '{context}'. "
+                "Transcribe con exactitud lo que dice el usuario y evalúa su desempeño como juez experto en oratoria. "
+                "Responde ÚNICAMENTE en formato JSON estricto con la siguiente estructura:\n"
+                "{\n"
+                '  "transcript": "Texto completo transcrito del audio",\n'
+                '  "overall_score": 85.0,\n'
+                '  "coherence_score": 90.0,\n'
+                '  "filler_words_count": 3,\n'
+                '  "nervousness_feedback": "Comentario sobre muletillas, pausas, tono y velocidad de habla.",\n'
+                '  "semantic_feedback": "Evaluación del dominio conceptual y claridad argumentativa.",\n'
+                '  "recommendations": ["Consejo 1", "Consejo 2", "Consejo 3"]\n'
+                "}"
+            )
+
+            model = genai_client.GenerativeModel("gemini-1.5-flash")
+            response = model.generate_content(
+                [audio_file, prompt],
+                generation_config={"response_mime_type": "application/json"}
+            )
+
+            analysis_json = json.loads(response.text)
+
+            # Limpiar archivo de la nube de Gemini
+            try:
+                genai_client.delete_file(audio_file.name)
+            except Exception:
+                pass
+
+        # ----------------------------------------------------
+        # OPCIÓN 2: PROCESAMIENTO CON OPENAI WHISPER + GPT-4o
+        # ----------------------------------------------------
+        elif openai_client:
+            print("Procesando audio con OpenAI Whisper + GPT-4o...")
+            with open(wav_path, "rb") as audio_file:
+                transcription_response = openai_client.audio.transcriptions.create(
+                    model="whisper-1",
+                    file=audio_file,
+                    language="es"
+                )
+            
+            transcript_text = transcription_response.text
+
+            system_prompt = (
+                "Eres un juez experto en oratoria. Evalúa la transcripción enviada. "
+                "Responde ÚNICAMENTE en formato JSON estricto con: transcript, overall_score, coherence_score, "
+                "filler_words_count, nervousness_feedback, semantic_feedback, recommendations (array de 3 strings)."
+            )
+            user_prompt = f"Contexto: {context}\nTranscripción: \"{transcript_text}\""
+
+            ai_response = openai_client.chat.completions.create(
+                model="gpt-4o",
+                response_format={"type": "json_object"},
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+            )
+            analysis_json = json.loads(ai_response.choices[0].message.content)
+
+        else:
+            # Modo fallback de desarrollo si no hay API keys cargadas aún
+            print("AVISO: No se encontró GEMINI_API_KEY u OPENAI_API_KEY. Usando respuesta simulada.")
+            analysis_json = {
+                "transcript": "Esta es una prueba de voz grabada desde el simulador de realidad virtual en Meta Quest.",
+                "overall_score": 88.5,
+                "coherence_score": 92.0,
+                "filler_words_count": 2,
+                "nervousness_feedback": "Excelente ritmo de voz. Se detectaron 2 pequeñas pausas vacilantes al inicio.",
+                "semantic_feedback": "Estructura argumentativa muy clara y buena proyección vocal.",
+                "recommendations": [
+                    "Mantén la mirada fija en los jurados del centro.",
+                    "Haz pausas de respiración de 2 segundos entre bloques.",
+                    "Proyecta mayor volumen al cerrar tus conclusiones."
+                ]
+            }
+
+        # Eliminar archivo temporal local
         if os.path.exists(wav_path):
             os.remove(wav_path)
 
-        # 4. Evaluación semántica y de nerviosismo usando GPT-4o
-        system_prompt = (
-            "Eres un juez experto en oratoria, lenguaje corporal y evaluación de presentaciones académicas y ejecutivas. "
-            "Debes analizar la transcripción enviada por un usuario en un simulador de Realidad Virtual y evaluar su desempeño. "
-            "Responde ÚNICAMENTE en formato JSON estricto con las siguientes llaves:\n"
-            "- transcript: (String) La transcripción completa recibida.\n"
-            "- overall_score: (Float de 0.0 a 100.0) Calificación general.\n"
-            "- coherence_score: (Float de 0.0 a 100.0) Nivel de cohesión lógica y terminología.\n"
-            "- filler_words_count: (Int) Conteo aproximado de muletillas (ej: 'este', 'eh', 'bueno', 'o sea').\n"
-            "- nervousness_feedback: (String) Crítica constructiva sobre ritmo, dudas o vacilaciones.\n"
-            "- semantic_feedback: (String) Evaluación de la claridad argumentativa y dominio técnico.\n"
-            "- recommendations: (Array de Strings) 3 consejos breves y accionables para mejorar."
-        )
-
-        user_prompt = f"Contexto de la presentación: {context}\nTranscripción del usuario: \"{transcript_text}\""
-
-        ai_response = client.chat.completions.create(
-            model="gpt-4o",
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.3
-        )
-
-        import json
-        analysis_json = json.loads(ai_response.choices[0].message.content)
-
-        # Devolver el formato exacto que espera Unreal Engine SpeechAnalyzer.cpp
+        # Devolver respuesta JSON formateada para Unreal Engine
         return jsonify({
-            "transcript": analysis_json.get("transcript", transcript_text),
-            "overall_score": float(analysis_json.get("overall_score", 80.0)),
-            "coherence_score": float(analysis_json.get("coherence_score", 85.0)),
+            "transcript": analysis_json.get("transcript", "Transcripción procesada."),
+            "overall_score": float(analysis_json.get("overall_score", 85.0)),
+            "coherence_score": float(analysis_json.get("coherence_score", 90.0)),
             "filler_words_count": int(analysis_json.get("filler_words_count", 0)),
-            "nervousness_feedback": str(analysis_json.get("nervousness_feedback", "Buen ritmo general.")),
-            "semantic_feedback": str(analysis_json.get("semantic_feedback", "Contenido estructurado correctamente.")),
+            "nervousness_feedback": str(analysis_json.get("nervousness_feedback", "Buen ritmo.")),
+            "semantic_feedback": str(analysis_json.get("semantic_feedback", "Buena estructura.")),
             "recommendations": list(analysis_json.get("recommendations", ["Practica pausas silenciosas."]))
         }), 200
 
@@ -97,5 +169,5 @@ def analyze_speech():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    print("Iniciando servidor de Inteligencia Artificial para MC Simulator en http://127.0.0.1:5000...")
+    print("Iniciando servidor backend para MC Simulator en http://127.0.0.1:5000...")
     app.run(host='0.0.0.0', port=5000, debug=True)

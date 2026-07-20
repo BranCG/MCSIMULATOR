@@ -6,7 +6,7 @@
 #include "SpeechAnalyzer.generated.h"
 
 USTRUCT(BlueprintType)
-FSpeechAnalysisResult
+struct FSpeechAnalysisResult
 {
 	GENERATED_BODY()
 

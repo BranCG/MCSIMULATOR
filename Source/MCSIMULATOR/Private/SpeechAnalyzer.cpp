@@ -5,10 +5,11 @@
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
 #include "Misc/Base64.h"
+#include "Async/Async.h"
 
 USpeechAnalyzer::USpeechAnalyzer()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = false;
 	
 	// Default configuration
 	ApiEndpointUrl = TEXT("http://127.0.0.1:5000/api/analyze");
@@ -34,44 +35,56 @@ void USpeechAnalyzer::RequestSpeechAnalysis(const TArray<uint8>& RawPCMData)
 		return;
 	}
 
-	// 1. Encode raw PCM 16-bit audio bytes to Base64
-	FString AudioBase64 = FBase64::Encode(RawPCMData);
+	FString LocalApiEndpoint = ApiEndpointUrl;
+	FString LocalApiKey = ApiKey;
+	FString LocalContext = EvaluationContext;
 
-	// 2. Prepare JSON request body
-	TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject());
-	JsonRequest->SetStringField(TEXT("audio_base64"), AudioBase64);
-	JsonRequest->SetStringField(TEXT("context"), EvaluationContext);
-	JsonRequest->SetNumberField(TEXT("sample_rate"), 16000.0); // 16kHz is standard for speech-to-text
-	JsonRequest->SetNumberField(TEXT("channels"), 1.0);        // Mono
-
-	FString RequestBody;
-	TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-	if (!FJsonSerializer::Serialize(JsonRequest.ToSharedRef(), Writer))
+	// Execute heavy Base64 conversion and JSON stringification in a background thread to prevent VR GameThread hitching
+	Async(EAsyncExecution::Thread, [this, RawPCMData, LocalApiEndpoint, LocalApiKey, LocalContext]()
 	{
-		OnAnalysisFailed.Broadcast(TEXT("Failed to serialize JSON request payload."));
-		return;
-	}
+		FString AudioBase64 = FBase64::Encode(RawPCMData);
 
-	// 3. Send Async HTTP Request
-	TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
-	Request->OnProcessRequestComplete().BindUObject(this, &USpeechAnalyzer::OnAnalysisResponseReceived);
-	Request->SetURL(ApiEndpointUrl);
-	Request->SetVerb(TEXT("POST"));
-	Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-	
-	if (!ApiKey.IsEmpty())
-	{
-		Request->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *ApiKey));
-	}
+		TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject());
+		JsonRequest->SetStringField(TEXT("audio_base64"), AudioBase64);
+		JsonRequest->SetStringField(TEXT("context"), LocalContext);
+		JsonRequest->SetNumberField(TEXT("sample_rate"), 16000.0);
+		JsonRequest->SetNumberField(TEXT("channels"), 1.0);
 
-	Request->SetContentAsString(RequestBody);
-	
-	UE_LOG(LogTemp, Log, TEXT("MC Simulator: Sending HTTP request to %s (Length: %d bytes)."), *ApiEndpointUrl, RequestBody.Len());
-	
-	if (!Request->ProcessRequest())
-	{
-		OnAnalysisFailed.Broadcast(TEXT("Failed to initiate HTTP network connection."));
-	}
+		FString RequestBody;
+		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
+		if (!FJsonSerializer::Serialize(JsonRequest.ToSharedRef(), Writer))
+		{
+			AsyncTask(ENamedThreads::GameThread, [this]()
+			{
+				OnAnalysisFailed.Broadcast(TEXT("Failed to serialize JSON request payload."));
+			});
+			return;
+		}
+
+		// Dispatch the HTTP request back on the main GameThread
+		AsyncTask(ENamedThreads::GameThread, [this, RequestBody, LocalApiEndpoint, LocalApiKey]()
+		{
+			TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
+			Request->OnProcessRequestComplete().BindUObject(this, &USpeechAnalyzer::OnAnalysisResponseReceived);
+			Request->SetURL(LocalApiEndpoint);
+			Request->SetVerb(TEXT("POST"));
+			Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+			
+			if (!LocalApiKey.IsEmpty())
+			{
+				Request->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *LocalApiKey));
+			}
+
+			Request->SetContentAsString(RequestBody);
+			
+			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Sending HTTP request to %s (Length: %d bytes)."), *LocalApiEndpoint, RequestBody.Len());
+			
+			if (!Request->ProcessRequest())
+			{
+				OnAnalysisFailed.Broadcast(TEXT("Failed to initiate HTTP network connection."));
+			}
+		});
+	});
 }
 
 void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
@@ -110,9 +123,9 @@ void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpR
 		JsonObject->TryGetNumberField(TEXT("coherence_score"), TempCoherenceScore);
 		Result.CoherenceScore = static_cast<float>(TempCoherenceScore);
 
-		int32 TempFillerWordsCount = 0;
-		JsonObject->TryGetIntegerField(TEXT("filler_words_count"), TempFillerWordsCount);
-		Result.FillerWordsCount = TempFillerWordsCount;
+		double TempFillerWordsCount = 0.0;
+		JsonObject->TryGetNumberField(TEXT("filler_words_count"), TempFillerWordsCount);
+		Result.FillerWordsCount = static_cast<int32>(TempFillerWordsCount);
 
 		JsonObject->TryGetStringField(TEXT("nervousness_feedback"), Result.NervousnessFeedback);
 		JsonObject->TryGetStringField(TEXT("semantic_feedback"), Result.SemanticFeedback);

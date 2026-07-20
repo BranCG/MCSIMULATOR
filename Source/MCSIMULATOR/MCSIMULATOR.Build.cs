@@ -17,7 +17,9 @@ public class MCSIMULATOR : ModuleRules
 			"HTTP", 
 			"Json", 
 			"JsonUtilities", 
-			"AudioCapture"
+			"AudioCapture",
+			"AudioCaptureCore",
+			"UMG"
 		});
 
 		if (Target.Platform == UnrealTargetPlatform.Android)

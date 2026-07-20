@@ -49,6 +49,9 @@ public:
 
 private:
 	bool bIsRecording;
+	bool bStreamInitialized;
+
+	void InitAudioStream();
 	
 	// Low-level audio capture wrapper
 	TSharedPtr<Audio::FAudioCapture> AudioCaptureDevice;

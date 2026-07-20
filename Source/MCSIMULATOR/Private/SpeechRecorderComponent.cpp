@@ -5,21 +5,28 @@
 
 USpeechRecorderComponent::USpeechRecorderComponent()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = false;
 	bIsRecording = false;
+	bStreamInitialized = false;
 }
 
 void USpeechRecorderComponent::BeginPlay()
 {
 	Super::BeginPlay();
 	AudioCaptureDevice = MakeShared<Audio::FAudioCapture>();
+	InitAudioStream();
 }
 
 void USpeechRecorderComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (bIsRecording)
+	if (AudioCaptureDevice.IsValid() && bStreamInitialized)
 	{
-		StopRecording();
+		if (bIsRecording)
+		{
+			AudioCaptureDevice->StopStream();
+		}
+		AudioCaptureDevice->CloseStream();
+		bStreamInitialized = false;
 	}
 	Super::EndPlay(EndPlayReason);
 }
@@ -29,12 +36,43 @@ void USpeechRecorderComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
+void USpeechRecorderComponent::InitAudioStream()
+{
+	if (!AudioCaptureDevice.IsValid() || bStreamInitialized)
+	{
+		return;
+	}
+
+	Audio::FAudioCaptureDeviceParams Params;
+	Params.DeviceIndex = 0; // Default recording device on Quest/Windows
+
+	Audio::FOnAudioCaptureFunction CaptureCallback = [this](const void* InAudio, int32 NumSamples, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverrun)
+	{
+		const float* FloatAudio = static_cast<const float*>(InAudio);
+		OnAudioCaptureCallback(FloatAudio, NumSamples, NumChannels, SampleRate, StreamTime, bOverrun);
+	};
+
+	bStreamInitialized = AudioCaptureDevice->OpenAudioCaptureStream(Params, CaptureCallback, 1024);
+	if (bStreamInitialized)
+	{
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Pre-initialized WASAPI audio capture stream."));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MC Simulator: Failed to pre-initialize audio capture stream."));
+	}
+}
+
 void USpeechRecorderComponent::StartRecording()
 {
 	if (bIsRecording || !AudioCaptureDevice.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MC Simulator: Already recording or audio capture device is invalid."));
 		return;
+	}
+
+	if (!bStreamInitialized)
+	{
+		InitAudioStream();
 	}
 
 	{
@@ -42,34 +80,12 @@ void USpeechRecorderComponent::StartRecording()
 		RecordedAudioBuffer.Empty();
 	}
 
-	Audio::FAudioCaptureDeviceParams Params;
-	Params.DeviceIndex = 0; // Default recording device on Quest/Windows
-
-	// Set up the audio capture callback lambda
-	Audio::FOnAudioCaptureFunction CaptureCallback = [this](const float* InAudio, int32 NumSamples, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverrun)
+	if (bStreamInitialized)
 	{
-		OnAudioCaptureCallback(InAudio, NumSamples, NumChannels, SampleRate, StreamTime, bOverrun);
-	};
-
-	bool bStreamOpened = AudioCaptureDevice->OpenDefaultAudioStream(Params, CaptureCallback);
-	if (bStreamOpened)
-	{
-		bool bStreamStarted = AudioCaptureDevice->StartStream();
-		if (bStreamStarted)
-		{
-			bIsRecording = true;
-			OnRecordingStarted.Broadcast();
-			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Started recording audio stream successfully."));
-		}
-		else
-		{
-			AudioCaptureDevice->CloseStream();
-			UE_LOG(LogTemp, Error, TEXT("MC Simulator: Failed to start audio stream."));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("MC Simulator: Failed to open default audio capture stream."));
+		bIsRecording = true;
+		AudioCaptureDevice->StartStream();
+		OnRecordingStarted.Broadcast();
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Started recording audio stream."));
 	}
 }
 
@@ -77,14 +93,15 @@ void USpeechRecorderComponent::StopRecording()
 {
 	if (!bIsRecording || !AudioCaptureDevice.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("MC Simulator: Not recording. Cannot stop."));
 		return;
 	}
 
 	bIsRecording = false;
 
-	AudioCaptureDevice->StopStream();
-	AudioCaptureDevice->CloseStream();
+	if (bStreamInitialized)
+	{
+		AudioCaptureDevice->StopStream();
+	}
 
 	TArray<uint8> OutputPCMData;
 	{

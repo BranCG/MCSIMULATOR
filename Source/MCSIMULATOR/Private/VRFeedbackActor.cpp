@@ -18,7 +18,7 @@ AVRFeedbackActor::AVRFeedbackActor()
 	WidgetComponent->SetWidgetSpace(EWidgetSpace::World);
 	WidgetComponent->SetDrawSize(FVector2D(1920.f, 1080.f));         // Standard 16:9 HD canvas
 	WidgetComponent->SetRelativeScale3D(FVector(0.15f, 0.15f, 0.15f)); // Scaled to reasonable size
-	WidgetComponent->bDrawAtDesiredSize = false;
+	WidgetComponent->SetDrawAtDesiredSize(false);
 	WidgetComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	
 	// Translucent blend mode is recommended for anti-aliasing text in VR

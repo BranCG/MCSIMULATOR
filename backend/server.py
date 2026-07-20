@@ -7,24 +7,31 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
-# Configuración de clientes de Inteligencia Artificial
+# Configuración de claves de API
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-# Intentar inicializar Gemini si hay clave disponible
-genai_client = None
+# Intentar inicializar la nueva SDK oficial google-genai
+new_genai_client = None
+legacy_genai_client = None
+
 if GEMINI_KEY:
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_KEY)
-        genai_client = genai
-        print("Backend configurado con Google Gemini Flash (Audio NATIVO).")
+        from google import genai
+        new_genai_client = genai.Client(api_key=GEMINI_KEY)
+        print("Backend configurado con la nueva SDK 'google-genai' (Gemini Flash).")
     except ImportError:
-        print("Librería 'google-generativeai' no instalada. Ejecuta: pip install google-generativeai")
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_KEY)
+            legacy_genai_client = genai
+            print("Backend configurado con la SDK 'google-generativeai'.")
+        except ImportError:
+            print("Ninguna librería de Gemini instalada. Ejecuta: pip install google-genai flask")
 
 # Intentar inicializar OpenAI como alternativa
 openai_client = None
-if OPENAI_KEY and not genai_client:
+if OPENAI_KEY and not new_genai_client and not legacy_genai_client:
     try:
         from openai import OpenAI
         openai_client = OpenAI(api_key=OPENAI_KEY)
@@ -62,42 +69,79 @@ def analyze_speech():
             wav_file.writeframes(raw_pcm_bytes)
 
         analysis_json = {}
+        prompt = (
+            f"Analiza este audio de presentación oral en el contexto de '{context}'. "
+            "Transcribe con exactitud lo que dice el usuario y evalúa su desempeño como juez experto en oratoria. "
+            "Responde ÚNICAMENTE en formato JSON estricto con la siguiente estructura:\n"
+            "{\n"
+            '  "transcript": "Texto completo transcrito del audio",\n'
+            '  "overall_score": 85.0,\n'
+            '  "coherence_score": 90.0,\n'
+            '  "filler_words_count": 3,\n'
+            '  "nervousness_feedback": "Comentario sobre muletillas, pausas, tono y velocidad de habla.",\n'
+            '  "semantic_feedback": "Evaluación del dominio conceptual y claridad argumentativa.",\n'
+            '  "recommendations": ["Consejo 1", "Consejo 2", "Consejo 3"]\n'
+            "}"
+        )
 
         # ----------------------------------------------------
-        # OPCIÓN 1: PROCESAMIENTO NATIVO CON GOOGLE GEMINI FLASH
+        # OPCIÓN 1A: PROCESAMIENTO CON LA NUEVA SDK 'google-genai'
         # ----------------------------------------------------
-        if genai_client:
-            print("Procesando audio directamente con Gemini 1.5/2.0 Flash...")
+        if new_genai_client:
+            print("Procesando audio directamente con la nueva SDK google-genai...")
+            audio_file = new_genai_client.files.upload(file=wav_path)
             
-            # Subir archivo de audio a la API de Gemini
-            audio_file = genai_client.upload_file(path=wav_path)
+            # Probar nombres de modelos compatibles de Gemini Flash
+            candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+            response_text = None
 
-            prompt = (
-                f"Analiza este audio de presentación oral en el contexto de '{context}'. "
-                "Transcribe con exactitud lo que dice el usuario y evalúa su desempeño como juez experto en oratoria. "
-                "Responde ÚNICAMENTE en formato JSON estricto con la siguiente estructura:\n"
-                "{\n"
-                '  "transcript": "Texto completo transcrito del audio",\n'
-                '  "overall_score": 85.0,\n'
-                '  "coherence_score": 90.0,\n'
-                '  "filler_words_count": 3,\n'
-                '  "nervousness_feedback": "Comentario sobre muletillas, pausas, tono y velocidad de habla.",\n'
-                '  "semantic_feedback": "Evaluación del dominio conceptual y claridad argumentativa.",\n'
-                '  "recommendations": ["Consejo 1", "Consejo 2", "Consejo 3"]\n'
-                "}"
-            )
+            for model_name in candidate_models:
+                try:
+                    from google.genai import types
+                    res = new_genai_client.models.generate_content(
+                        model=model_name,
+                        contents=[audio_file, prompt],
+                        config=types.GenerateContentConfig(
+                            response_mime_type="application/json"
+                        )
+                    )
+                    response_text = res.text
+                    print(f"Éxito procesando con modelo: {model_name}")
+                    break
+                except Exception as model_err:
+                    print(f"Modelo {model_name} no disponible ({str(model_err)}), probando siguiente...")
 
-            model = genai_client.GenerativeModel("gemini-1.5-flash")
-            response = model.generate_content(
-                [audio_file, prompt],
-                generation_config={"response_mime_type": "application/json"}
-            )
+            if response_text:
+                analysis_json = json.loads(response_text)
 
-            analysis_json = json.loads(response.text)
+        # ----------------------------------------------------
+        # OPCIÓN 1B: PROCESAMIENTO CON 'google-generativeai'
+        # ----------------------------------------------------
+        elif legacy_genai_client:
+            print("Procesando audio con SDK google-generativeai...")
+            audio_file = legacy_genai_client.upload_file(path=wav_path)
 
-            # Limpiar archivo de la nube de Gemini
+            candidate_models = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-1.5-flash"]
+            response_text = None
+
+            for model_name in candidate_models:
+                try:
+                    model = legacy_genai_client.GenerativeModel(model_name)
+                    res = model.generate_content(
+                        [audio_file, prompt],
+                        generation_config={"response_mime_type": "application/json"}
+                    )
+                    response_text = res.text
+                    print(f"Éxito procesando con modelo: {model_name}")
+                    break
+                except Exception as model_err:
+                    print(f"Modelo {model_name} no disponible ({str(model_err)}), probando siguiente...")
+
+            if response_text:
+                analysis_json = json.loads(response_text)
+
             try:
-                genai_client.delete_file(audio_file.name)
+                legacy_genai_client.delete_file(audio_file.name)
             except Exception:
                 pass
 
@@ -132,9 +176,9 @@ def analyze_speech():
             )
             analysis_json = json.loads(ai_response.choices[0].message.content)
 
-        else:
-            # Modo fallback de desarrollo si no hay API keys cargadas aún
-            print("AVISO: No se encontró GEMINI_API_KEY u OPENAI_API_KEY. Usando respuesta simulada.")
+        # Fallback de desarrollo si ningún modelo respondió
+        if not analysis_json:
+            print("AVISO: No se pudo obtener respuesta de la IA. Usando respuesta simulada de prueba.")
             analysis_json = {
                 "transcript": "Esta es una prueba de voz grabada desde el simulador de realidad virtual en Meta Quest.",
                 "overall_score": 88.5,

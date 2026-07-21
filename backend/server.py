@@ -8,7 +8,7 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 # Configuración de claves de API
-GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyCce9gLHc0e6anncX71exaNmiQGAdTlcUA")
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 
 # Intentar inicializar la nueva SDK oficial google-genai
@@ -27,7 +27,7 @@ if GEMINI_KEY:
             legacy_genai_client = genai
             print("Backend configurado con la SDK 'google-generativeai'.")
         except ImportError:
-            print("Ninguna librería de Gemini instalada. Ejecuta: pip install google-genai flask")
+            print("Ninguna librería de Gemini instalada. Ejecuta: pip install google-generativeai flask")
 
 # Intentar inicializar OpenAI como alternativa
 openai_client = None
@@ -91,8 +91,7 @@ def analyze_speech():
             print("Procesando audio directamente con la nueva SDK google-genai...")
             audio_file = new_genai_client.files.upload(file=wav_path)
             
-            # Probar nombres de modelos compatibles de Gemini Flash
-            candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+            candidate_models = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b"]
             response_text = None
 
             for model_name in candidate_models:
@@ -109,7 +108,7 @@ def analyze_speech():
                     print(f"Éxito procesando con modelo: {model_name}")
                     break
                 except Exception as model_err:
-                    print(f"Modelo {model_name} no disponible ({str(model_err)}), probando siguiente...")
+                    print(f"Modelo {model_name} no disponible ({str(model_err)})...")
 
             if response_text:
                 analysis_json = json.loads(response_text)
@@ -121,7 +120,29 @@ def analyze_speech():
             print("Procesando audio con SDK google-generativeai...")
             audio_file = legacy_genai_client.upload_file(path=wav_path)
 
-            candidate_models = ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-flash-8b", "gemini-1.5-flash"]
+            # Descubrir modelos activos dinámicamente desde la cuenta del usuario
+            dynamic_models = []
+            try:
+                for m in legacy_genai_client.list_models():
+                    if 'generateContent' in m.supported_generation_methods and 'flash' in m.name.lower():
+                        dynamic_models.append(m.name)
+            except Exception as e:
+                print(f"No se pudieron listar modelos automáticamente: {e}")
+
+            # Lista exhaustiva de nombres de modelos candidatos
+            candidate_models = dynamic_models + [
+                "gemini-1.5-flash-latest",
+                "gemini-1.5-flash-002",
+                "gemini-1.5-flash-001",
+                "gemini-1.5-flash",
+                "gemini-2.0-flash-exp",
+                "gemini-2.0-flash",
+                "models/gemini-1.5-flash-latest",
+                "models/gemini-1.5-flash-002",
+                "models/gemini-1.5-flash-001",
+                "models/gemini-1.5-flash"
+            ]
+
             response_text = None
 
             for model_name in candidate_models:
@@ -135,10 +156,14 @@ def analyze_speech():
                     print(f"Éxito procesando con modelo: {model_name}")
                     break
                 except Exception as model_err:
-                    print(f"Modelo {model_name} no disponible ({str(model_err)}), probando siguiente...")
+                    print(f"Modelo {model_name} intentado ({str(model_err)[:80]}...)")
 
             if response_text:
-                analysis_json = json.loads(response_text)
+                # Sanitizar texto si contiene bloques de markdown ```json ... ```
+                clean_text = response_text.strip()
+                if clean_text.startswith("```"):
+                    clean_text = clean_text.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+                analysis_json = json.loads(clean_text)
 
             try:
                 legacy_genai_client.delete_file(audio_file.name)

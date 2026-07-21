@@ -1,0 +1,29 @@
+# Plantilla de ejemplo para el servidor backend de MC Simulator
+# Copia este archivo como server.py y establece tu GEMINI_API_KEY o OPENAI_API_KEY como variable de entorno.
+
+import os
+import base64
+import wave
+import json
+import tempfile
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY", "")
+OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+@app.route('/api/analyze', methods=['POST'])
+def analyze_speech():
+    return jsonify({
+        "transcript": "Transcripción de ejemplo.",
+        "overall_score": 85.0,
+        "coherence_score": 90.0,
+        "filler_words_count": 0,
+        "nervousness_feedback": "Buen ritmo.",
+        "semantic_feedback": "Buena estructura.",
+        "recommendations": ["Consejo 1", "Consejo 2", "Consejo 3"]
+    }), 200
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

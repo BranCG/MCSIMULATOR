@@ -38,3 +38,10 @@ FileOpenOrder/
 Plugins/*/Binaries/
 Plugins/*/Intermediate/
 Plugins/*/Saved/
+
+# Security & Backend Secrets
+backend/server.py
+backend/*.py
+!.gitignore
+.env
+*.env

@@ -1,4 +1,5 @@
 #include "SpeechAnalyzer.h"
+#include "MCSIMULATORGameInstance.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Dom/JsonObject.h"
@@ -6,6 +7,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Misc/Base64.h"
 #include "Async/Async.h"
+#include "Kismet/GameplayStatics.h"
 
 USpeechAnalyzer::USpeechAnalyzer()
 {
@@ -38,6 +40,18 @@ void USpeechAnalyzer::RequestSpeechAnalysis(const TArray<uint8>& RawPCMData)
 	FString LocalApiEndpoint = ApiEndpointUrl;
 	FString LocalApiKey = ApiKey;
 	FString LocalContext = EvaluationContext;
+
+	// If context is general/default, retrieve active persistent scenario context from GameInstance
+	if (LocalContext.Equals(TEXT("General"), ESearchCase::IgnoreCase) || LocalContext.IsEmpty())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(UGameplayStatics::GetGameInstance(World)))
+			{
+				LocalContext = GI->GetActiveAIContext();
+			}
+		}
+	}
 
 	// Execute heavy Base64 conversion and JSON stringification in a background thread to prevent VR GameThread hitching
 	Async(EAsyncExecution::Thread, [this, RawPCMData, LocalApiEndpoint, LocalApiKey, LocalContext]()

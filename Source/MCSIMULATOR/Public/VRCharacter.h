@@ -57,7 +57,12 @@ public:
 	UInputAction* TriggerAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Input")
-	UInputAction* GrabAction;
+public:
+	UFUNCTION(BlueprintCallable, Category = "VR|Speech")
+	void StartRecordingSpeech();
+
+	UFUNCTION(BlueprintCallable, Category = "VR|Speech")
+	void StopRecordingSpeech();
 
 protected:
 	// Handle runtime permissions for Oculus Quest microphone

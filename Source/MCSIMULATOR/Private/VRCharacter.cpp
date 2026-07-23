@@ -133,22 +133,32 @@ void AVRCharacter::OnPermissionRequestCompleted(const TArray<FString>& Permissio
 	}
 }
 
-void AVRCharacter::OnTriggerStarted()
+void AVRCharacter::StartRecordingSpeech()
 {
-	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Trigger pressed (Started). Starting voice recording..."));
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: StartRecordingSpeech invoked."));
 	if (SpeechRecorder)
 	{
 		SpeechRecorder->StartRecording();
 	}
 }
 
-void AVRCharacter::OnTriggerReleased()
+void AVRCharacter::StopRecordingSpeech()
 {
-	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Trigger released (Completed). Stopping voice recording..."));
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: StopRecordingSpeech invoked."));
 	if (SpeechRecorder)
 	{
 		SpeechRecorder->StopRecording();
 	}
+}
+
+void AVRCharacter::OnTriggerStarted()
+{
+	// Trigger action logic (e.g. pointer click)
+}
+
+void AVRCharacter::OnTriggerReleased()
+{
+	// Release action logic
 }
 
 void AVRCharacter::OnGrabTriggered()

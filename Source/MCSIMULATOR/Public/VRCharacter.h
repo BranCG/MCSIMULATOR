@@ -67,7 +67,8 @@ protected:
 	void OnPermissionRequestCompleted(const TArray<FString>& Permissions, const TArray<bool>& GrantResults);
 
 	// Action bindings
-	void OnTriggerTriggered();
+	void OnTriggerStarted();
+	void OnTriggerReleased();
 	void OnGrabTriggered();
 	void OnGrabReleased();
 };

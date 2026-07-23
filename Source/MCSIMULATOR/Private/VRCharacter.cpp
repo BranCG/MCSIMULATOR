@@ -47,7 +47,6 @@ AVRCharacter::AVRCharacter()
 
 	// Mic Recorder Component
 	SpeechRecorder = CreateDefaultSubobject<USpeechRecorderComponent>(TEXT("SpeechRecorder"));
-
 }
 
 void AVRCharacter::BeginPlay()
@@ -84,7 +83,8 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	{
 		if (TriggerAction)
 		{
-			EnhancedInputComponent->BindAction(TriggerAction, ETriggerEvent::Triggered, this, &AVRCharacter::OnTriggerTriggered);
+			EnhancedInputComponent->BindAction(TriggerAction, ETriggerEvent::Started, this, &AVRCharacter::OnTriggerStarted);
+			EnhancedInputComponent->BindAction(TriggerAction, ETriggerEvent::Completed, this, &AVRCharacter::OnTriggerReleased);
 		}
 		if (GrabAction)
 		{
@@ -133,10 +133,22 @@ void AVRCharacter::OnPermissionRequestCompleted(const TArray<FString>& Permissio
 	}
 }
 
-void AVRCharacter::OnTriggerTriggered()
+void AVRCharacter::OnTriggerStarted()
 {
-	// Trigger custom interaction or start speaking
-	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Trigger activated."));
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Trigger pressed (Started). Starting voice recording..."));
+	if (SpeechRecorder)
+	{
+		SpeechRecorder->StartRecording();
+	}
+}
+
+void AVRCharacter::OnTriggerReleased()
+{
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Trigger released (Completed). Stopping voice recording..."));
+	if (SpeechRecorder)
+	{
+		SpeechRecorder->StopRecording();
+	}
 }
 
 void AVRCharacter::OnGrabTriggered()

@@ -47,6 +47,7 @@ AVRCharacter::AVRCharacter()
 
 	// Mic Recorder Component
 	SpeechRecorder = CreateDefaultSubobject<USpeechRecorderComponent>(TEXT("SpeechRecorder"));
+
 }
 
 void AVRCharacter::BeginPlay()

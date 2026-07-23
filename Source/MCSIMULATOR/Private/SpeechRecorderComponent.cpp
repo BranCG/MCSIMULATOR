@@ -55,7 +55,8 @@ void USpeechRecorderComponent::InitAudioStream()
 	bStreamInitialized = AudioCaptureDevice->OpenAudioCaptureStream(Params, CaptureCallback, 1024);
 	if (bStreamInitialized)
 	{
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Pre-initialized WASAPI audio capture stream."));
+		AudioCaptureDevice->StartStream();
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Pre-initialized and started WASAPI audio capture stream."));
 	}
 	else
 	{
@@ -80,13 +81,9 @@ void USpeechRecorderComponent::StartRecording()
 		RecordedAudioBuffer.Empty();
 	}
 
-	if (bStreamInitialized)
-	{
-		bIsRecording = true;
-		AudioCaptureDevice->StartStream();
-		OnRecordingStarted.Broadcast();
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Started recording audio stream."));
-	}
+	bIsRecording = true;
+	OnRecordingStarted.Broadcast();
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: Started accumulating audio buffer."));
 }
 
 void USpeechRecorderComponent::StopRecording()
@@ -97,11 +94,6 @@ void USpeechRecorderComponent::StopRecording()
 	}
 
 	bIsRecording = false;
-
-	if (bStreamInitialized)
-	{
-		AudioCaptureDevice->StopStream();
-	}
 
 	TArray<uint8> OutputPCMData;
 	{

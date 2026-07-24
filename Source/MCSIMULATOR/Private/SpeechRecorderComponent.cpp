@@ -43,8 +43,7 @@ void USpeechRecorderComponent::InitAudioStream()
 		return;
 	}
 
-	Audio::FAudioCaptureDeviceParams Params;
-	Params.DeviceIndex = 0; // Default active recording device on Windows/Quest
+	Audio::FAudioCaptureDeviceParams Params; // Default constructor selects INDEX_NONE (Windows Default Recording Device)
 
 	Audio::FOnAudioCaptureFunction CaptureCallback = [this](const void* InAudio, int32 NumSamples, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverrun)
 	{
@@ -117,14 +116,6 @@ void USpeechRecorderComponent::OnAudioCaptureCallback(const float* InAudioIn, in
 	if (!bIsRecording || NumSamples <= 0 || NumChannels <= 0)
 	{
 		return;
-	}
-
-	static int32 LogCounter = 0;
-	if (++LogCounter % 50 == 1)
-	{
-		const uint8* RawBytes = reinterpret_cast<const uint8*>(InAudioIn);
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator Mic Callback [%d samples, %d ch]: %02X %02X %02X %02X %02X %02X %02X %02X"),
-			NumSamples, NumChannels, RawBytes[0], RawBytes[1], RawBytes[2], RawBytes[3], RawBytes[4], RawBytes[5], RawBytes[6], RawBytes[7]);
 	}
 
 	FScopeLock Lock(&BufferMutex);

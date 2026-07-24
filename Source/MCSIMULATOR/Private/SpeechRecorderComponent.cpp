@@ -44,22 +44,7 @@ void USpeechRecorderComponent::InitAudioStream()
 	}
 
 	Audio::FAudioCaptureDeviceParams Params;
-	Params.DeviceIndex = 0; // Default recording device
-
-	// Enumerate available recording devices using GetAudioCaptureDeviceInfo
-	for (int32 i = 0; i < 8; ++i)
-	{
-		Audio::FCaptureDeviceInfo DevInfo;
-		if (AudioCaptureDevice->GetAudioCaptureDeviceInfo(DevInfo, i))
-		{
-			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Found Audio Input Device [%d]: %s"), i, *DevInfo.DeviceName);
-			if (DevInfo.DeviceName.Contains(TEXT("Oculus"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Quest"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Headset"), ESearchCase::IgnoreCase))
-			{
-				Params.DeviceIndex = i;
-				UE_LOG(LogTemp, Log, TEXT("MC Simulator: Auto-selected VR Microphone Device Index [%d]: %s"), i, *DevInfo.DeviceName);
-			}
-		}
-	}
+	Params.DeviceIndex = 0; // Default active recording device on Windows/Quest
 
 	Audio::FOnAudioCaptureFunction CaptureCallback = [this](const void* InAudio, int32 NumSamples, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverrun)
 	{
@@ -77,7 +62,7 @@ void USpeechRecorderComponent::InitAudioStream()
 	if (bStreamInitialized)
 	{
 		AudioCaptureDevice->StartStream();
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Pre-initialized and started WASAPI audio capture stream on DeviceIndex %d."), Params.DeviceIndex);
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Pre-initialized and started WASAPI audio capture stream."));
 	}
 	else
 	{

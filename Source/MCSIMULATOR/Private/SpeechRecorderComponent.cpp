@@ -48,6 +48,12 @@ void USpeechRecorderComponent::InitAudioStream()
 
 	Audio::FOnAudioCaptureFunction CaptureCallback = [this](const void* InAudio, int32 NumSamples, int32 NumChannels, int32 SampleRate, double StreamTime, bool bOverrun)
 	{
+		static bool bLoggedRate = false;
+		if (!bLoggedRate)
+		{
+			bLoggedRate = true;
+			UE_LOG(LogTemp, Log, TEXT("MC Simulator: WASAPI Audio Capture stream active at %d Hz, %d channels."), SampleRate, NumChannels);
+		}
 		const float* FloatAudio = static_cast<const float*>(InAudio);
 		OnAudioCaptureCallback(FloatAudio, NumSamples, NumChannels, SampleRate, StreamTime, bOverrun);
 	};

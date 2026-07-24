@@ -61,7 +61,7 @@ void USpeechAnalyzer::RequestSpeechAnalysis(const TArray<uint8>& RawPCMData)
 		TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject());
 		JsonRequest->SetStringField(TEXT("audio_base64"), AudioBase64);
 		JsonRequest->SetStringField(TEXT("context"), LocalContext);
-		JsonRequest->SetNumberField(TEXT("sample_rate"), 16000.0);
+		JsonRequest->SetNumberField(TEXT("sample_rate"), 48000.0);
 		JsonRequest->SetNumberField(TEXT("channels"), 1.0);
 
 		FString RequestBody;

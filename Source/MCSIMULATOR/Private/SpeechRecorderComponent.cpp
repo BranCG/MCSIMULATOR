@@ -117,6 +117,7 @@ void USpeechRecorderComponent::OnAudioCaptureCallback(const float* InAudioIn, in
 
 	// Downmix multi-channel to Mono and convert 32-bit Float (-1.0 to 1.0) to 16-bit PCM (signed short: -32768 to 32767)
 	int32 NumFrames = NumSamples / NumChannels;
+	float MaxSampleAmp = 0.0f;
 	
 	// Pre-allocate space in buffer to improve performance
 	RecordedAudioBuffer.Reserve(RecordedAudioBuffer.Num() + (NumFrames * 2));
@@ -129,6 +130,12 @@ void USpeechRecorderComponent::OnAudioCaptureCallback(const float* InAudioIn, in
 			SampleSum += InAudioIn[Frame * NumChannels + Channel];
 		}
 		float MonoSample = SampleSum / NumChannels;
+		float AbsSample = FMath::Abs(MonoSample);
+		if (AbsSample > MaxSampleAmp)
+		{
+			MaxSampleAmp = AbsSample;
+		}
+
 		MonoSample = FMath::Clamp(MonoSample, -1.0f, 1.0f);
 
 		// Scale to 16-bit range
@@ -137,5 +144,10 @@ void USpeechRecorderComponent::OnAudioCaptureCallback(const float* InAudioIn, in
 		// Append raw bytes (Little Endian)
 		RecordedAudioBuffer.Add(IntSample & 0xFF);
 		RecordedAudioBuffer.Add((IntSample >> 8) & 0xFF);
+	}
+
+	if (MaxSampleAmp > 0.005f)
+	{
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Voice detected in Mic Buffer! Peak Amplitude: %f"), MaxSampleAmp);
 	}
 }

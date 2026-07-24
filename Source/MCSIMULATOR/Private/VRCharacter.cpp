@@ -4,6 +4,7 @@
 #include "Components/CapsuleComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputActionValue.h"
 #include "SpeechRecorderComponent.h"
 
 #if PLATFORM_ANDROID
@@ -91,7 +92,30 @@ void AVRCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EnhancedInputComponent->BindAction(GrabAction, ETriggerEvent::Started, this, &AVRCharacter::OnGrabTriggered);
 			EnhancedInputComponent->BindAction(GrabAction, ETriggerEvent::Completed, this, &AVRCharacter::OnGrabReleased);
 		}
+		if (MoveAction)
+		{
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AVRCharacter::MoveInputAction);
+		}
 	}
+}
+
+void AVRCharacter::Move(const FVector2D& Value)
+{
+	if (Value.SizeSquared() > 0.001f && VRCamera)
+	{
+		const FRotator YawRotation(0.f, VRCamera->GetComponentRotation().Yaw, 0.f);
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		AddMovementInput(ForwardDirection, Value.Y);
+		AddMovementInput(RightDirection, Value.X);
+	}
+}
+
+void AVRCharacter::MoveInputAction(const FInputActionValue& Value)
+{
+	FVector2D MovementVector = Value.Get<FVector2D>();
+	Move(MovementVector);
 }
 
 void AVRCharacter::RequestMicrophonePermission()

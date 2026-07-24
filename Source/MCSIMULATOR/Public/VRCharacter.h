@@ -59,7 +59,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Input")
 	UInputAction* GrabAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Input")
+	UInputAction* MoveAction;
+
 public:
+	UFUNCTION(BlueprintCallable, Category = "VR|Movement")
+	void Move(const FVector2D& Value);
 	UFUNCTION(BlueprintCallable, Category = "VR|Speech")
 	void StartRecordingSpeech();
 
@@ -74,6 +79,7 @@ protected:
 	void OnPermissionRequestCompleted(const TArray<FString>& Permissions, const TArray<bool>& GrantResults);
 
 	// Action bindings
+	void MoveInputAction(const struct FInputActionValue& Value);
 	void OnTriggerStarted();
 	void OnTriggerReleased();
 	void OnGrabTriggered();

@@ -144,16 +144,26 @@ void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpR
 		JsonObject->TryGetStringField(TEXT("nervousness_feedback"), Result.NervousnessFeedback);
 		JsonObject->TryGetStringField(TEXT("semantic_feedback"), Result.SemanticFeedback);
 
-		// Extract Recommendations array
-		const TArray<TSharedPtr<FJsonValue>>* RecommendationsArray = nullptr;
-		if (JsonObject->TryGetArrayField(TEXT("recommendations"), RecommendationsArray) && RecommendationsArray)
+		// Extract Recommendations (handles both string and array of strings)
+		FString SingleRec;
+		if (JsonObject->TryGetStringField(TEXT("recommendations"), SingleRec))
 		{
-			for (const TSharedPtr<FJsonValue>& Val : *RecommendationsArray)
+			Result.Recommendations = SingleRec;
+		}
+		else
+		{
+			const TArray<TSharedPtr<FJsonValue>>* RecommendationsArray = nullptr;
+			if (JsonObject->TryGetArrayField(TEXT("recommendations"), RecommendationsArray) && RecommendationsArray)
 			{
-				if (Val.IsValid())
+				TArray<FString> RecList;
+				for (const TSharedPtr<FJsonValue>& Val : *RecommendationsArray)
 				{
-					Result.Recommendations.Add(Val->AsString());
+					if (Val.IsValid())
+					{
+						RecList.Add(Val->AsString());
+					}
 				}
+				Result.Recommendations = FString::Join(RecList, TEXT("\n\n"));
 			}
 		}
 

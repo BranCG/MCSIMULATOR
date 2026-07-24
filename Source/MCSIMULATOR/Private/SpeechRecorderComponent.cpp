@@ -76,7 +76,13 @@ void USpeechRecorderComponent::StartRecording()
 		return;
 	}
 
-	if (!bStreamInitialized)
+	// Re-initialize or refresh stream to wake up Quest Link mic if headset entered sleep/standby
+	if (bStreamInitialized)
+	{
+		AudioCaptureDevice->StopStream();
+		AudioCaptureDevice->StartStream();
+	}
+	else
 	{
 		InitAudioStream();
 	}

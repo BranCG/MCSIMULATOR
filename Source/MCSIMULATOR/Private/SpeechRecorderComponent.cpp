@@ -120,39 +120,72 @@ void USpeechRecorderComponent::OnAudioCaptureCallback(const float* InAudioIn, in
 
 	FScopeLock Lock(&BufferMutex);
 
-	// Downmix multi-channel to Mono and convert 32-bit Float (-1.0 to 1.0) to 16-bit PCM (signed short: -32768 to 32767)
 	int32 NumFrames = NumSamples / NumChannels;
-	float MaxSampleAmp = 0.0f;
-	
-	// Pre-allocate space in buffer to improve performance
 	RecordedAudioBuffer.Reserve(RecordedAudioBuffer.Num() + (NumFrames * 2));
 
-	for (int32 Frame = 0; Frame < NumFrames; ++Frame)
+	// Test if input is 32-bit float or 16-bit int
+	bool bIsFloatFormat = true;
+	float MaxFloat = 0.0f;
+	for (int32 i = 0; i < FMath::Min(NumSamples, 64); ++i)
 	{
-		float SampleSum = 0.f;
-		for (int32 Channel = 0; Channel < NumChannels; ++Channel)
+		float AbsVal = FMath::Abs(InAudioIn[i]);
+		if (AbsVal > MaxFloat)
 		{
-			SampleSum += InAudioIn[Frame * NumChannels + Channel];
+			MaxFloat = AbsVal;
 		}
-		float MonoSample = SampleSum / NumChannels;
-		float AbsSample = FMath::Abs(MonoSample);
-		if (AbsSample > MaxSampleAmp)
-		{
-			MaxSampleAmp = AbsSample;
-		}
-
-		MonoSample = FMath::Clamp(MonoSample, -1.0f, 1.0f);
-
-		// Scale to 16-bit range
-		int16 IntSample = static_cast<int16>(MonoSample * 32767.0f);
-
-		// Append raw bytes (Little Endian)
-		RecordedAudioBuffer.Add(IntSample & 0xFF);
-		RecordedAudioBuffer.Add((IntSample >> 8) & 0xFF);
 	}
 
-	if (MaxSampleAmp > 0.005f)
+	// If 32-bit float samples evaluate to 0, check if buffer contains 16-bit PCM integers
+	if (MaxFloat < 0.0001f)
 	{
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Voice detected in Mic Buffer! Peak Amplitude: %f"), MaxSampleAmp);
+		const int16* IntAudio = reinterpret_cast<const int16*>(InAudioIn);
+		int16 MaxInt = 0;
+		for (int32 i = 0; i < FMath::Min(NumSamples, 64); ++i)
+		{
+			int16 AbsVal = FMath::Abs(IntAudio[i]);
+			if (AbsVal > MaxInt)
+			{
+				MaxInt = AbsVal;
+			}
+		}
+		if (MaxInt > 10)
+		{
+			bIsFloatFormat = false;
+		}
+	}
+
+	if (bIsFloatFormat)
+	{
+		for (int32 Frame = 0; Frame < NumFrames; ++Frame)
+		{
+			float SampleSum = 0.f;
+			for (int32 Channel = 0; Channel < NumChannels; ++Channel)
+			{
+				SampleSum += InAudioIn[Frame * NumChannels + Channel];
+			}
+			float MonoSample = SampleSum / NumChannels;
+			MonoSample = FMath::Clamp(MonoSample, -1.0f, 1.0f);
+			int16 IntSample = static_cast<int16>(MonoSample * 32767.0f);
+
+			RecordedAudioBuffer.Add(IntSample & 0xFF);
+			RecordedAudioBuffer.Add((IntSample >> 8) & 0xFF);
+		}
+	}
+	else
+	{
+		// Native 16-bit PCM Integer path
+		const int16* IntAudio = reinterpret_cast<const int16*>(InAudioIn);
+		for (int32 Frame = 0; Frame < NumFrames; ++Frame)
+		{
+			int32 SampleSum = 0;
+			for (int32 Channel = 0; Channel < NumChannels; ++Channel)
+			{
+				SampleSum += IntAudio[Frame * NumChannels + Channel];
+			}
+			int16 MonoSample = static_cast<int16>(SampleSum / NumChannels);
+
+			RecordedAudioBuffer.Add(MonoSample & 0xFF);
+			RecordedAudioBuffer.Add((MonoSample >> 8) & 0xFF);
+		}
 	}
 }

@@ -36,7 +36,7 @@ struct FSpeechAnalysisResult
 
 	// Actionable recommendations for the presenter
 	UPROPERTY(BlueprintReadOnly, Category = "Speech Simulator|Analysis")
-	FString Recommendations;
+	TArray<FString> Recommendations;
 };
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnSpeechAnalysisCompleted, const FSpeechAnalysisResult&, Result);

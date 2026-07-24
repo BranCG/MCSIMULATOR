@@ -46,20 +46,17 @@ void USpeechRecorderComponent::InitAudioStream()
 	Audio::FAudioCaptureDeviceParams Params;
 	Params.DeviceIndex = 0; // Default recording device
 
-	int32 NumCaptureDevices = 0;
-	if (AudioCaptureDevice->GetNumCaptureDevices(NumCaptureDevices) && NumCaptureDevices > 0)
+	// Enumerate available recording devices using GetAudioCaptureDeviceInfo
+	for (int32 i = 0; i < 8; ++i)
 	{
-		for (int32 i = 0; i < NumCaptureDevices; ++i)
+		Audio::FCaptureDeviceInfo DevInfo;
+		if (AudioCaptureDevice->GetAudioCaptureDeviceInfo(DevInfo, i))
 		{
-			Audio::FCaptureDeviceInfo DevInfo;
-			if (AudioCaptureDevice->GetAudioCaptureDeviceInfo(DevInfo, i))
+			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Found Audio Input Device [%d]: %s"), i, *DevInfo.DeviceName);
+			if (DevInfo.DeviceName.Contains(TEXT("Oculus"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Quest"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Headset"), ESearchCase::IgnoreCase))
 			{
-				UE_LOG(LogTemp, Log, TEXT("MC Simulator: Found Audio Input Device [%d]: %s"), i, *DevInfo.DeviceName);
-				if (DevInfo.DeviceName.Contains(TEXT("Oculus"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Quest"), ESearchCase::IgnoreCase) || DevInfo.DeviceName.Contains(TEXT("Headset"), ESearchCase::IgnoreCase))
-				{
-					Params.DeviceIndex = i;
-					UE_LOG(LogTemp, Log, TEXT("MC Simulator: Auto-selected VR Microphone Device Index [%d]: %s"), i, *DevInfo.DeviceName);
-				}
+				Params.DeviceIndex = i;
+				UE_LOG(LogTemp, Log, TEXT("MC Simulator: Auto-selected VR Microphone Device Index [%d]: %s"), i, *DevInfo.DeviceName);
 			}
 		}
 	}

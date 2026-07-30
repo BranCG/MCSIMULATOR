@@ -12,6 +12,7 @@ ABreathingOrb::ABreathingOrb()
 
 	OrbMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbMesh"));
 	RootComponent = OrbMesh;
+	OrbMesh->SetCollisionProfileName(TEXT("NoCollision"));
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	if (SphereMeshAsset.Succeeded())
@@ -88,8 +89,8 @@ void ABreathingOrb::StartBreathingSession()
 
 	bSessionActive = true;
 	CurrentRound = 1;
-	// Intro duration: ~10 seconds
-	SetBreathingState(EBreathingState::Intro, 10.5f);
+	float IntroDuration = (SoundIntro && SoundIntro->GetDuration() > 0.f) ? SoundIntro->GetDuration() + 0.3f : 16.f;
+	SetBreathingState(EBreathingState::Intro, IntroDuration);
 }
 
 void ABreathingOrb::SetBreathingState(EBreathingState NewState, float Duration)
@@ -99,7 +100,7 @@ void ABreathingOrb::SetBreathingState(EBreathingState NewState, float Duration)
 	TargetDuration = Duration;
 
 	PlaySoundForState(NewState);
-	UE_LOG(LogTemp, Log, TEXT("MC Simulator: Breathing Orb state changed to %d (Round %d)"), (int32)NewState, CurrentRound);
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: Breathing Orb state changed to %d (Duration %.2f, Round %d)"), (int32)NewState, Duration, CurrentRound);
 }
 
 void ABreathingOrb::AdvanceState()
@@ -107,32 +108,46 @@ void ABreathingOrb::AdvanceState()
 	switch (CurrentState)
 	{
 	case EBreathingState::Intro:
-		SetBreathingState(EBreathingState::Inhale, 4.2f); // 4 seconds inhale
+	{
+		float InhaleDuration = (SoundInhale && SoundInhale->GetDuration() > 0.f) ? SoundInhale->GetDuration() + 0.2f : 4.5f;
+		SetBreathingState(EBreathingState::Inhale, InhaleDuration);
 		break;
+	}
 
 	case EBreathingState::Inhale:
-		SetBreathingState(EBreathingState::Hold, 7.2f); // 7 seconds hold
+	{
+		float HoldDuration = (SoundHold && SoundHold->GetDuration() > 0.f) ? SoundHold->GetDuration() + 0.2f : 7.5f;
+		SetBreathingState(EBreathingState::Hold, HoldDuration);
 		break;
+	}
 
 	case EBreathingState::Hold:
-		SetBreathingState(EBreathingState::Exhale, 8.2f); // 8 seconds exhale
+	{
+		float ExhaleDuration = (SoundExhale && SoundExhale->GetDuration() > 0.f) ? SoundExhale->GetDuration() + 0.2f : 8.5f;
+		SetBreathingState(EBreathingState::Exhale, ExhaleDuration);
 		break;
+	}
 
 	case EBreathingState::Exhale:
 		if (CurrentRound == 1)
 		{
 			CurrentRound = 2;
-			SetBreathingState(EBreathingState::Transition, 5.5f); // Transition to Round 2
+			float TransDuration = (SoundTransition && SoundTransition->GetDuration() > 0.f) ? SoundTransition->GetDuration() + 0.3f : 5.5f;
+			SetBreathingState(EBreathingState::Transition, TransDuration);
 		}
 		else
 		{
-			SetBreathingState(EBreathingState::Outro, 8.5f); // Outro message
+			float OutroDuration = (SoundOutro && SoundOutro->GetDuration() > 0.f) ? SoundOutro->GetDuration() + 0.3f : 8.5f;
+			SetBreathingState(EBreathingState::Outro, OutroDuration);
 		}
 		break;
 
 	case EBreathingState::Transition:
-		SetBreathingState(EBreathingState::Inhale, 4.2f); // Round 2 Inhale
+	{
+		float InhaleDuration = (SoundInhale && SoundInhale->GetDuration() > 0.f) ? SoundInhale->GetDuration() + 0.2f : 4.5f;
+		SetBreathingState(EBreathingState::Inhale, InhaleDuration);
 		break;
+	}
 
 	case EBreathingState::Outro:
 		CurrentState = EBreathingState::Completed;

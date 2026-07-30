@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "UObject/ConstructorHelpers.h"
+#include "TimerManager.h"
 
 ABreathingOrb::ABreathingOrb()
 {
@@ -89,7 +90,7 @@ void ABreathingOrb::StartBreathingSession()
 
 	bSessionActive = true;
 	CurrentRound = 1;
-	float IntroDuration = (SoundIntro && SoundIntro->GetDuration() > 0.f) ? SoundIntro->GetDuration() + 0.3f : 16.f;
+	float IntroDuration = (SoundIntro && SoundIntro->GetDuration() > 0.f) ? SoundIntro->GetDuration() + 1.6f : 17.f;
 	SetBreathingState(EBreathingState::Intro, IntroDuration);
 }
 
@@ -198,6 +199,20 @@ void ABreathingOrb::PlaySoundForState(EBreathingState State)
 
 	if (TargetSound)
 	{
-		ActiveAudioComponent = UGameplayStatics::SpawnSound2D(this, TargetSound);
+		if (State == EBreathingState::Intro)
+		{
+			FTimerHandle IntroDelayHandle;
+			GetWorldTimerManager().SetTimer(IntroDelayHandle, [this, TargetSound]()
+			{
+				if (TargetSound && bSessionActive && CurrentState == EBreathingState::Intro)
+				{
+					ActiveAudioComponent = UGameplayStatics::SpawnSound2D(this, TargetSound);
+				}
+			}, 1.2f, false);
+		}
+		else
+		{
+			ActiveAudioComponent = UGameplayStatics::SpawnSound2D(this, TargetSound);
+		}
 	}
 }

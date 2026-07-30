@@ -70,10 +70,10 @@ public:
 
 	// Settings
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breathing Orb|Settings")
-	float MinScale = 0.5f;
+	float MinScale = 0.25f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Breathing Orb|Settings")
-	float MaxScale = 1.6f;
+	float MaxScale = 0.85f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Breathing Orb|State")
 	EBreathingState CurrentState = EBreathingState::Idle;

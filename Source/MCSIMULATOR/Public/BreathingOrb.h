@@ -7,6 +7,7 @@
 class UStaticMeshComponent;
 class UPointLightComponent;
 class USoundBase;
+class UAudioComponent;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBreathingSessionCompleted);
 
@@ -88,6 +89,9 @@ public:
 	void StartBreathingSession();
 
 private:
+	UPROPERTY()
+	UAudioComponent* ActiveAudioComponent = nullptr;
+
 	float StateTimer = 0.f;
 	float TargetDuration = 0.f;
 	float CurrentScale = 0.5f;

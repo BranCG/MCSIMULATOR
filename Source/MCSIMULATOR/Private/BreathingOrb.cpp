@@ -1,8 +1,10 @@
 #include "BreathingOrb.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "UObject/ConstructorHelpers.h"
 
 ABreathingOrb::ABreathingOrb()
 {
@@ -11,11 +13,17 @@ ABreathingOrb::ABreathingOrb()
 	OrbMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbMesh"));
 	RootComponent = OrbMesh;
 
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (SphereMeshAsset.Succeeded())
+	{
+		OrbMesh->SetStaticMesh(SphereMeshAsset.Object);
+	}
+
 	OrbLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("OrbLight"));
 	OrbLight->SetupAttachment(OrbMesh);
-	OrbLight->SetIntensity(3000.f);
+	OrbLight->SetIntensity(10000.f);
 	OrbLight->SetLightColor(FLinearColor(0.1f, 0.8f, 1.0f)); // Cyan aura
-	OrbLight->SetAttenuationRadius(800.f);
+	OrbLight->SetAttenuationRadius(1500.f);
 }
 
 void ABreathingOrb::BeginPlay()
@@ -166,8 +174,15 @@ void ABreathingOrb::PlaySoundForState(EBreathingState State)
 		break;
 	}
 
+	// Stop previous playing audio to prevent any overlapping voices
+	if (ActiveAudioComponent)
+	{
+		ActiveAudioComponent->Stop();
+		ActiveAudioComponent = nullptr;
+	}
+
 	if (TargetSound)
 	{
-		UGameplayStatics::PlaySound2D(this, TargetSound);
+		ActiveAudioComponent = UGameplayStatics::SpawnSound2D(this, TargetSound);
 	}
 }

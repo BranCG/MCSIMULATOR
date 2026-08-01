@@ -14,6 +14,8 @@ ABreathingOrb::ABreathingOrb()
 	OrbMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("OrbMesh"));
 	RootComponent = OrbMesh;
 	OrbMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	OrbMesh->SetSimulatePhysics(false);
+	OrbMesh->SetEnableGravity(false);
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMeshAsset(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	if (SphereMeshAsset.Succeeded())

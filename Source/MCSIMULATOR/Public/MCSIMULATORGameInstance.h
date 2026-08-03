@@ -30,6 +30,10 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Scenario")
 	FString SelectedAIContext;
 
+	// Store map name prior to entering relaxation session
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Scenario")
+	FString PreviousMapName;
+
 	// Helper function to set current scenario state
 	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Scenario")
 	void SetCurrentScenario(const FString& ScenarioId, const FString& ScenarioName, const FString& AIContext);
@@ -37,4 +41,12 @@ public:
 	// Get active AI evaluation context string
 	UFUNCTION(BlueprintPure, Category = "MC Simulator|Scenario")
 	FString GetActiveAIContext() const;
+
+	// Transition to Guided Breathing Relaxation Map
+	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Navigation")
+	void OpenRelaxationScene();
+
+	// Transition back from Relaxation Map to Scenario or Menu
+	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Navigation")
+	void ReturnFromRelaxation();
 };

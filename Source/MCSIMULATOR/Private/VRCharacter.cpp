@@ -6,6 +6,11 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "SpeechRecorderComponent.h"
+#include "BreathingOrb.h"
+#include "VRFeedbackActor.h"
+#include "MCSIMULATORGameInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "Camera/PlayerCameraManager.h"
 
 #if PLATFORM_ANDROID
 #include "AndroidPermissionFunctionLibrary.h"
@@ -193,4 +198,85 @@ void AVRCharacter::OnGrabTriggered()
 void AVRCharacter::OnGrabReleased()
 {
 	UE_LOG(LogTemp, Log, TEXT("MC Simulator: VR Grab released."));
+}
+
+void AVRCharacter::StartInLevelBreathingSession()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: Initiating in-level breathing relaxation session without map reloading."));
+
+	// Smooth camera fade to dark
+	if (APlayerCameraManager* CamManager = UGameplayStatics::GetPlayerCameraManager(this, 0))
+	{
+		CamManager->StartCameraFade(0.f, 0.7f, 0.8f, FLinearColor::Black, false, true);
+	}
+
+	// Calculate 1.5m position right in front of player VR Gaze
+	FVector SpawnLoc = VRCamera->GetComponentLocation() + VRCamera->GetForwardVector() * 150.f;
+	FRotator SpawnRot = VRCamera->GetComponentRotation();
+
+	// Find or Spawn ABreathingOrb
+	ABreathingOrb* Orb = Cast<ABreathingOrb>(UGameplayStatics::GetActorOfClass(World, ABreathingOrb::StaticClass()));
+	if (!Orb)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		Orb = World->SpawnActor<ABreathingOrb>(ABreathingOrb::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
+	}
+	else
+	{
+		Orb->SetActorLocationAndRotation(SpawnLoc, SpawnRot);
+		Orb->SetActorHiddenInGame(false);
+	}
+
+	if (Orb)
+	{
+		// Listen for session completion to bring back feedback screen
+		Orb->OnSessionCompleted.RemoveAll(this);
+		Orb->OnSessionCompleted.AddDynamic(this, &AVRCharacter::OnInLevelBreathingCompleted);
+
+		Orb->StartBreathingSession();
+	}
+}
+
+void AVRCharacter::OnInLevelBreathingCompleted()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("MC Simulator: In-level breathing session completed. Revealing 3D Feedback screen."));
+
+	// Restore camera fade
+	if (APlayerCameraManager* CamManager = UGameplayStatics::GetPlayerCameraManager(this, 0))
+	{
+		CamManager->StartCameraFade(0.7f, 0.f, 1.0f, FLinearColor::Black, false, true);
+	}
+
+	// Hide Breathing Orb
+	if (ABreathingOrb* Orb = Cast<ABreathingOrb>(UGameplayStatics::GetActorOfClass(World, ABreathingOrb::StaticClass())))
+	{
+		Orb->SetActorHiddenInGame(true);
+	}
+
+	// Check if cached feedback results exist in GameInstance and display on VRFeedbackActor
+	if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(GetGameInstance()))
+	{
+		FSpeechAnalysisResult CachedResult;
+		if (GI->GetCachedAnalysisResult(CachedResult))
+		{
+			if (AVRFeedbackActor* FeedbackActor = Cast<AVRFeedbackActor>(UGameplayStatics::GetActorOfClass(World, AVRFeedbackActor::StaticClass())))
+			{
+				FeedbackActor->DisplayAnalysisResults(CachedResult);
+				UE_LOG(LogTemp, Log, TEXT("MC Simulator: Successfully projected cached speech feedback on 3D VR Screen."));
+			}
+		}
+	}
 }

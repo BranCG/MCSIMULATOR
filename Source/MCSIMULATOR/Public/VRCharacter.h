@@ -71,6 +71,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "VR|Speech")
 	void StopRecordingSpeech();
 
+	UFUNCTION(BlueprintCallable, Category = "VR|Relaxation")
+	void StartInLevelBreathingSession();
+
+protected:
+	UFUNCTION()
+	void OnInLevelBreathingCompleted();
+
 protected:
 	// Handle runtime permissions for Oculus Quest microphone
 	void RequestMicrophonePermission();

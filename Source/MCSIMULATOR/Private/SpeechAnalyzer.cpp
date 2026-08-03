@@ -158,6 +158,15 @@ void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpR
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Semantic speech analysis completed successfully."));
+
+		if (UWorld* World = GetWorld())
+		{
+			if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(World->GetGameInstance()))
+			{
+				GI->SaveAnalysisResult(Result);
+			}
+		}
+
 		OnAnalysisCompleted.Broadcast(Result);
 	}
 	else

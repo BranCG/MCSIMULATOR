@@ -1,4 +1,5 @@
 #include "VRFeedbackActor.h"
+#include "MCSIMULATORGameInstance.h"
 #include "Components/WidgetComponent.h"
 #include "Components/StaticMeshComponent.h"
 
@@ -28,6 +29,17 @@ AVRFeedbackActor::AVRFeedbackActor()
 void AVRFeedbackActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// Automatically display cached analysis result if returning from relaxation map
+	if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(GetGameInstance()))
+	{
+		FSpeechAnalysisResult CachedResult;
+		if (GI->GetCachedAnalysisResult(CachedResult))
+		{
+			DisplayAnalysisResults(CachedResult);
+			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Automatically projected cached speech feedback on 3D VR Screen."));
+		}
+	}
 }
 
 void AVRFeedbackActor::DisplayAnalysisResults(const FSpeechAnalysisResult& Results)

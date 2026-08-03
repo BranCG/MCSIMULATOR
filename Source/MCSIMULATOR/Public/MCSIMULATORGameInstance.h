@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
+#include "SpeechAnalyzer.h"
 #include "MCSIMULATORGameInstance.generated.h"
 
 /**
@@ -33,6 +34,21 @@ public:
 	// Store map name prior to entering relaxation session
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Scenario")
 	FString PreviousMapName;
+
+	// Cached Speech Analysis Result from Gemini AI
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Analysis")
+	FSpeechAnalysisResult CachedAnalysisResult;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Analysis")
+	bool bHasCachedAnalysis = false;
+
+	// Save analysis result to persistent GameInstance memory
+	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Analysis")
+	void SaveAnalysisResult(const FSpeechAnalysisResult& Result);
+
+	// Get cached analysis result if available
+	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Analysis")
+	bool GetCachedAnalysisResult(FSpeechAnalysisResult& OutResult);
 
 	// Helper function to set current scenario state
 	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Scenario")

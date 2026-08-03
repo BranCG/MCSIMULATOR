@@ -34,6 +34,9 @@ void ABreathingOrb::BeginPlay()
 {
 	Super::BeginPlay();
 	OrbMesh->SetWorldScale3D(FVector(MinScale));
+
+	// Automatically start the guided breathing session when level opens
+	StartBreathingSession();
 }
 
 void ABreathingOrb::Tick(float DeltaTime)

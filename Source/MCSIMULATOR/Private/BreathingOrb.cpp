@@ -1,4 +1,5 @@
 #include "BreathingOrb.h"
+#include "MCSIMULATORGameInstance.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/AudioComponent.h"
@@ -159,7 +160,12 @@ void ABreathingOrb::AdvanceState()
 		CurrentState = EBreathingState::Completed;
 		bSessionActive = false;
 		OnSessionCompleted.Broadcast();
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: 2-round breathing session completed."));
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: 2-round breathing session completed. Automatically returning to scenario."));
+
+		if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(GetGameInstance()))
+		{
+			GI->ReturnFromRelaxation();
+		}
 		break;
 
 	default:

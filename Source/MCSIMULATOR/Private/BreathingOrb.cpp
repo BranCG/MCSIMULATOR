@@ -24,7 +24,7 @@ ABreathingOrb::ABreathingOrb()
 		OrbMesh->SetStaticMesh(SphereMeshAsset.Object);
 	}
 
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DiscMatAsset(TEXT("/Game/DiscMaterial.DiscMaterial"));
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DiscMatAsset(TEXT("/Engine/VREditor/UI/DiscMaterial.DiscMaterial"));
 	if (DiscMatAsset.Succeeded())
 	{
 		OrbMesh->SetMaterial(0, DiscMatAsset.Object);
@@ -79,7 +79,7 @@ void ABreathingOrb::BeginPlay()
 	OrbMesh->SetWorldScale3D(FVector(MinScale));
 
 	// Re-apply DiscMaterial at runtime to override static mesh defaults
-	if (UMaterialInterface* DiscMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/DiscMaterial.DiscMaterial")))
+	if (UMaterialInterface* DiscMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Engine/VREditor/UI/DiscMaterial.DiscMaterial")))
 	{
 		OrbMesh->SetMaterial(0, DiscMat);
 	}
@@ -208,12 +208,7 @@ void ABreathingOrb::AdvanceState()
 		CurrentState = EBreathingState::Completed;
 		bSessionActive = false;
 		OnSessionCompleted.Broadcast();
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: 2-round breathing session completed. Automatically returning to scenario."));
-
-		if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(GetGameInstance()))
-		{
-			GI->ReturnFromRelaxation();
-		}
+		UE_LOG(LogTemp, Log, TEXT("MC Simulator: 2-round breathing session completed."));
 		break;
 
 	default:

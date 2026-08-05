@@ -24,6 +24,48 @@ ABreathingOrb::ABreathingOrb()
 		OrbMesh->SetStaticMesh(SphereMeshAsset.Object);
 	}
 
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> DiscMatAsset(TEXT("/Game/DiscMaterial.DiscMaterial"));
+	if (DiscMatAsset.Succeeded())
+	{
+		OrbMesh->SetMaterial(0, DiscMatAsset.Object);
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndIntroAsset(TEXT("/Game/Audio/Breathing/breathing_intro.breathing_intro"));
+	if (SndIntroAsset.Succeeded())
+	{
+		SoundIntro = SndIntroAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndInhaleAsset(TEXT("/Game/Audio/Breathing/breathing_inhale.breathing_inhale"));
+	if (SndInhaleAsset.Succeeded())
+	{
+		SoundInhale = SndInhaleAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndHoldAsset(TEXT("/Game/Audio/Breathing/breathing_hold.breathing_hold"));
+	if (SndHoldAsset.Succeeded())
+	{
+		SoundHold = SndHoldAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndExhaleAsset(TEXT("/Game/Audio/Breathing/breathing_exhale.breathing_exhale"));
+	if (SndExhaleAsset.Succeeded())
+	{
+		SoundExhale = SndExhaleAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndTransAsset(TEXT("/Game/Audio/Breathing/breathing_transition.breathing_transition"));
+	if (SndTransAsset.Succeeded())
+	{
+		SoundTransition = SndTransAsset.Object;
+	}
+
+	static ConstructorHelpers::FObjectFinder<USoundBase> SndOutroAsset(TEXT("/Game/Audio/Breathing/breathing_outro.breathing_outro"));
+	if (SndOutroAsset.Succeeded())
+	{
+		SoundOutro = SndOutroAsset.Object;
+	}
+
 	OrbLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("OrbLight"));
 	OrbLight->SetupAttachment(OrbMesh);
 	OrbLight->SetIntensity(10000.f);
@@ -35,6 +77,12 @@ void ABreathingOrb::BeginPlay()
 {
 	Super::BeginPlay();
 	OrbMesh->SetWorldScale3D(FVector(MinScale));
+
+	// Re-apply DiscMaterial at runtime to override static mesh defaults
+	if (UMaterialInterface* DiscMat = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/DiscMaterial.DiscMaterial")))
+	{
+		OrbMesh->SetMaterial(0, DiscMat);
+	}
 
 	// Automatically start the guided breathing session when level opens
 	StartBreathingSession();

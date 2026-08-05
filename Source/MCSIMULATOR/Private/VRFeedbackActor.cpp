@@ -44,6 +44,12 @@ void AVRFeedbackActor::BeginPlay()
 
 void AVRFeedbackActor::DisplayAnalysisResults(const FSpeechAnalysisResult& Results)
 {
+	SetActorHiddenInGame(false);
+	if (WidgetComponent)
+	{
+		WidgetComponent->SetVisibility(true, true);
+	}
+
 	// Broadcast event for UI designers to run animations, play audio, and populate text boxes in Blueprints
 	OnAnalysisResultsReceived(Results);
 	

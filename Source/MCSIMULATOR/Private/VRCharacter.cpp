@@ -285,19 +285,20 @@ void AVRCharacter::OnInLevelBreathingCompleted() {
     Orb->SetActorHiddenInGame(true);
   }
 
-  // Check if cached feedback results exist in GameInstance and display on
-  // VRFeedbackActor
+  // Check if cached feedback results exist in GameInstance and display on all VRFeedbackActor screens
   if (UMCSIMULATORGameInstance *GI =
           Cast<UMCSIMULATORGameInstance>(GetGameInstance())) {
     FSpeechAnalysisResult CachedResult;
     if (GI->GetCachedAnalysisResult(CachedResult)) {
-      if (AVRFeedbackActor *FeedbackActor =
-              Cast<AVRFeedbackActor>(UGameplayStatics::GetActorOfClass(
-                  World, AVRFeedbackActor::StaticClass()))) {
-        FeedbackActor->DisplayAnalysisResults(CachedResult);
-        UE_LOG(LogTemp, Log,
-               TEXT("MC Simulator: Successfully projected cached speech "
-                    "feedback on 3D VR Screen."));
+      TArray<AActor*> FeedbackActors;
+      UGameplayStatics::GetAllActorsOfClass(World, AVRFeedbackActor::StaticClass(), FeedbackActors);
+      for (AActor* Actor : FeedbackActors) {
+        if (AVRFeedbackActor* FeedbackActor = Cast<AVRFeedbackActor>(Actor)) {
+          FeedbackActor->DisplayAnalysisResults(CachedResult);
+          UE_LOG(LogTemp, Log,
+                 TEXT("MC Simulator: Successfully projected cached speech "
+                      "feedback on 3D VR Screen."));
+        }
       }
     }
   }

@@ -107,7 +107,11 @@ void ABreathingOrb::Tick(float DeltaTime)
 		KeepAliveTimer = 0.f;
 		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 		{
-			PC->ClientPlayForceFeedback(nullptr, false, false, NAME_None);
+			if (APawn* Pawn = PC->GetPawn())
+			{
+				Pawn->AddControllerPitchInput(0.0001f);
+				Pawn->AddControllerPitchInput(-0.0001f);
+			}
 		}
 	}
 

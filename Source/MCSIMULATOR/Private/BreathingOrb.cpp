@@ -99,6 +99,18 @@ void ABreathingOrb::Tick(float DeltaTime)
 
 	StateTimer += DeltaTime;
 
+	// Send subtle micro keep-alive ping to Meta Quest Link every 3 seconds to prevent headset display sleep
+	static float KeepAliveTimer = 0.f;
+	KeepAliveTimer += DeltaTime;
+	if (KeepAliveTimer >= 3.0f)
+	{
+		KeepAliveTimer = 0.f;
+		if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+		{
+			PC->ClientPlayForceFeedback(nullptr, false, false, NAME_None);
+		}
+	}
+
 	// Scale & Light lerp based on current state
 	float Alpha = (TargetDuration > 0.f) ? FMath::Clamp(StateTimer / TargetDuration, 0.f, 1.f) : 1.f;
 
@@ -144,7 +156,7 @@ void ABreathingOrb::StartBreathingSession()
 
 	bSessionActive = true;
 	CurrentRound = 1;
-	float IntroDuration = (SoundIntro && SoundIntro->GetDuration() > 0.f) ? SoundIntro->GetDuration() + 1.6f : 17.f;
+	float IntroDuration = (SoundIntro && SoundIntro->GetDuration() > 0.f) ? SoundIntro->GetDuration() + 0.3f : 12.f;
 	SetBreathingState(EBreathingState::Intro, IntroDuration);
 }
 

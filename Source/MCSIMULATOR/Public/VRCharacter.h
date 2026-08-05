@@ -62,6 +62,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Input")
 	UInputAction* MoveAction;
 
+	// Breathing Orb Blueprint Class
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Relaxation")
+	TSubclassOf<class ABreathingOrb> BreathingOrbClass;
+
 public:
 	UFUNCTION(BlueprintCallable, Category = "VR|Movement")
 	void Move(const FVector2D& Value);

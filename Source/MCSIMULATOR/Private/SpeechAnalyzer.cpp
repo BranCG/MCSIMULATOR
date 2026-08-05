@@ -1,5 +1,6 @@
 #include "SpeechAnalyzer.h"
 #include "MCSIMULATORGameInstance.h"
+#include "BreathingOrb.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
 #include "Dom/JsonObject.h"
@@ -164,6 +165,16 @@ void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpR
 			if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(World->GetGameInstance()))
 			{
 				GI->SaveAnalysisResult(Result);
+			}
+
+			// If Breathing Orb is active in game, hold off on displaying feedback until meditation completes
+			if (AActor* Orb = UGameplayStatics::GetActorOfClass(World, ABreathingOrb::StaticClass()))
+			{
+				if (!Orb->IsHidden())
+				{
+					UE_LOG(LogTemp, Log, TEXT("MC Simulator: Breathing Orb is currently active. Holding off 3D screen display until meditation finishes."));
+					return;
+				}
 			}
 		}
 

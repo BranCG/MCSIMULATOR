@@ -227,7 +227,15 @@ void AVRCharacter::StartInLevelBreathingSession() {
       VRCamera->GetComponentLocation() + VRCamera->GetForwardVector() * 150.f;
   FRotator SpawnRot = VRCamera->GetComponentRotation();
 
-  UClass* TargetClass = BreathingOrbClass ? *BreathingOrbClass : ABreathingOrb::StaticClass();
+  UClass* TargetClass = BreathingOrbClass ? *BreathingOrbClass : nullptr;
+  if (!TargetClass)
+  {
+      TargetClass = StaticLoadClass(ABreathingOrb::StaticClass(), nullptr, TEXT("/Game/Blueprints/BP_BreathingOrb.BP_BreathingOrb_C"));
+  }
+  if (!TargetClass)
+  {
+      TargetClass = ABreathingOrb::StaticClass();
+  }
 
   // Find or Spawn ABreathingOrb using configured Blueprint class (BP_BreathingOrb)
   ABreathingOrb *Orb = Cast<ABreathingOrb>(

@@ -511,43 +511,45 @@
                     <!-- LEFT COLUMN: HISTORIAL DE ENSAYOS -->
                     <div class="lg:col-span-2 space-y-8">
                         
-                        <!-- RECENT EVALUATION SUMMARY CARD -->
-                        <div class="glass-panel p-6 rounded-3xl border border-gray-800">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="text-xl font-bold text-white flex items-center space-x-2">
-                                    <i data-lucide="history" class="w-5 h-5 text-brand-500"></i>
-                                    <span>Última Evaluación en VR</span>
-                                </h3>
-                                <span class="text-xs text-gray-400">Hoy, 18:24 hrs</span>
-                            </div>
-
-                            <div class="grid sm:grid-cols-3 gap-4 mb-6">
-                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
-                                    <div class="text-xs text-gray-400 mb-1">Puntaje General</div>
-                                    <div class="text-3xl font-black text-brand-500 font-heading">88.5</div>
+                        <!-- RECENT EVALUATION SUMMARY CONTAINER -->
+                        <div id="evaluations-container">
+                            <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                                        <i data-lucide="history" class="w-5 h-5 text-brand-500"></i>
+                                        <span>Última Evaluación en VR</span>
+                                    </h3>
+                                    <span class="text-xs text-gray-400">Hoy, 18:24 hrs</span>
                                 </div>
-                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
-                                    <div class="text-xs text-gray-400 mb-1">Coherencia</div>
-                                    <div class="text-3xl font-black text-brand-accent font-heading">92%</div>
-                                </div>
-                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
-                                    <div class="text-xs text-gray-400 mb-1">Muletillas Chilenas</div>
-                                    <div class="text-3xl font-black text-purple-400 font-heading">2</div>
-                                </div>
-                            </div>
 
-                            <div class="p-4 bg-gray-900/80 rounded-2xl border border-gray-800 mb-6">
-                                <h4 class="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2">Transcripción Registrada por Whisper</h4>
-                                <p class="text-sm text-gray-300 italic">
-                                    "Estimada comisión, hoy presento los avances de nuestro simulador de realidad virtual enfocado en el desarrollo de habilidades comunicacionales para estudiantes..."
-                                </p>
-                            </div>
+                                <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                                    <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                        <div class="text-xs text-gray-400 mb-1">Puntaje General</div>
+                                        <div class="text-3xl font-black text-brand-500 font-heading">88.5</div>
+                                    </div>
+                                    <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                        <div class="text-xs text-gray-400 mb-1">Coherencia</div>
+                                        <div class="text-3xl font-black text-brand-accent font-heading">92%</div>
+                                    </div>
+                                    <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                        <div class="text-xs text-gray-400 mb-1">Muletillas Chilenas</div>
+                                        <div class="text-3xl font-black text-purple-400 font-heading">2</div>
+                                    </div>
+                                </div>
 
-                            <div class="flex justify-end">
-                                <button onclick="downloadPDFReport()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold rounded-xl transition-all border border-gray-700 flex items-center space-x-2">
-                                    <i data-lucide="download" class="w-4 h-4 text-brand-500"></i>
-                                    <span>Descargar Reporte PDF Certificado</span>
-                                </button>
+                                <div class="p-4 bg-gray-900/80 rounded-2xl border border-gray-800 mb-6">
+                                    <h4 class="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2">Transcripción Registrada por Whisper</h4>
+                                    <p class="text-sm text-gray-300 italic">
+                                        "Estimada comisión, hoy presento los avances de nuestro simulador de realidad virtual enfocado en el desarrollo de habilidades comunicacionales para estudiantes..."
+                                    </p>
+                                </div>
+
+                                <div class="flex justify-end">
+                                    <button onclick="downloadPDFReport()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold rounded-xl transition-all border border-gray-700 flex items-center space-x-2">
+                                        <i data-lucide="download" class="w-4 h-4 text-brand-500"></i>
+                                        <span>Descargar Reporte PDF Certificado</span>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -729,7 +731,7 @@
             <!-- FORMULARIO 4: RECUPERAR CONTRASEÑA -->
             <div id="form-recover" class="hidden">
                 <h3 class="text-2xl font-bold font-heading text-white mb-2">Recuperar Contraseña</h3>
-                <p class="text-xs text-gray-400 mb-6">Te enviaremos un enlace de recuperación seguro vía <strong>Resend Mail API</strong>.</p>
+                <p class="text-xs text-gray-400 mb-6">Te enviaremos un código de 6 dígitos vía <strong>Resend Mail API</strong>.</p>
 
                 <form onsubmit="handleRecoverPassword(event)" class="space-y-4">
                     <div>
@@ -738,12 +740,33 @@
                     </div>
 
                     <button type="submit" class="w-full py-3.5 bg-brand-accent hover:bg-cyan-600 text-white font-bold rounded-xl shadow-lg transition-all text-sm">
-                        Enviar Enlace de Recuperación
+                        Enviar Código de Recuperación
                     </button>
                 </form>
                 <div class="mt-4 text-center text-xs text-gray-400">
                     <button onclick="switchAuthTab('login')" class="text-gray-300 hover:text-white">Volver al inicio de sesión</button>
                 </div>
+            </div>
+
+            <!-- FORMULARIO 5: CAMBIAR CONTRASEÑA (RESET CODE) -->
+            <div id="form-reset" class="hidden">
+                <h3 class="text-2xl font-bold font-heading text-white mb-2">Nueva Contraseña</h3>
+                <p class="text-xs text-gray-400 mb-6">Ingresa el código enviado a tu correo y tu nueva contraseña.</p>
+
+                <form onsubmit="handleResetPassword(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Código de 6 dígitos</label>
+                        <input type="text" id="reset-code" maxlength="6" required class="w-full px-4 py-3 bg-gray-900 border border-brand-500 text-center font-mono text-xl tracking-widest rounded-xl text-white focus:outline-none" placeholder="123456">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Nueva Contraseña</label>
+                        <input type="password" id="reset-pass" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all text-sm">
+                        Actualizar Contraseña
+                    </button>
+                </form>
             </div>
 
         </div>
@@ -754,6 +777,16 @@
         // ESTADO DE APLICACIÓN LOCAL
         let currentUser = JSON.parse(localStorage.getItem('mc_user')) || null;
         let activeVRToken = null;
+
+        function getNick() {
+            if (!currentUser) return '@usuario';
+            return currentUser.nickname || currentUser.nick || '@usuario';
+        }
+
+        function getEmail() {
+            if (!currentUser) return 'usuario@dominio.cl';
+            return currentUser.email || 'usuario@dominio.cl';
+        }
 
         // INICIALIZACIÓN
         document.addEventListener('DOMContentLoaded', () => {
@@ -785,7 +818,7 @@
                 navLogin.classList.add('hidden');
                 navRegister.classList.add('hidden');
                 userMenu.classList.remove('hidden');
-                document.getElementById('user-nick-display').innerText = currentUser.nick;
+                document.getElementById('user-nick-display').innerText = getNick();
             } else {
                 navLogin.classList.remove('hidden');
                 navRegister.classList.remove('hidden');
@@ -808,11 +841,13 @@
             document.getElementById('form-verify').classList.add('hidden');
             document.getElementById('form-login').classList.add('hidden');
             document.getElementById('form-recover').classList.add('hidden');
+            document.getElementById('form-reset').classList.add('hidden');
 
             if (tab === 'register') document.getElementById('form-register').classList.remove('hidden');
             if (tab === 'verify') document.getElementById('form-verify').classList.remove('hidden');
             if (tab === 'login') document.getElementById('form-login').classList.remove('hidden');
             if (tab === 'recover') document.getElementById('form-recover').classList.remove('hidden');
+            if (tab === 'reset') document.getElementById('form-reset').classList.remove('hidden');
         }
 
         // HANDLERS DE FORMULARIOS CONECTADOS AL BACKEND & RESEND API
@@ -832,7 +867,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    currentUser = { name, email, nick, verified: false };
+                    currentUser = { name, email, nickname: nick, verified: false };
                     document.getElementById('verify-email-target').innerText = email;
                     switchAuthTab('verify');
                 } else {
@@ -852,7 +887,7 @@
                 const res = await fetch('/api/auth/verify-code', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: currentUser.email, code })
+                    body: JSON.stringify({ email: getEmail(), code })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -897,34 +932,54 @@
                     alert('Error en inicio de sesión: ' + (data.error || 'Credenciales inválidas'));
                 }
             } catch (err) {
-                currentUser = {
-                    name: 'Brandon Pérez',
-                    email: input.includes('@') ? input : 'brandon@fimchile.cl',
-                    nick: input.startsWith('@') ? input : '@brandon_tech',
-                    verified: true
-                };
-                localStorage.setItem('mc_user', JSON.stringify(currentUser));
-                checkUserSession();
-                closeAuthModal();
-                navigateTo('dashboard');
+                alert('Error en inicio de sesión: ' + err.message);
             }
         }
 
+        let recoverEmailTarget = "";
+
         async function handleRecoverPassword(e) {
             e.preventDefault();
-            const email = document.getElementById('recover-email').value;
+            recoverEmailTarget = document.getElementById('recover-email').value;
             try {
                 const res = await fetch('/api/auth/recover-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email: recoverEmailTarget })
                 });
                 const data = await res.json();
-                alert(data.message || data.error || `Enlace enviado a ${email}`);
+                if (res.ok) {
+                    alert(data.message);
+                    switchAuthTab('reset');
+                } else {
+                    alert('Error: ' + (data.error || 'No se pudo enviar el correo'));
+                }
             } catch (err) {
-                alert(`Hemos enviado un enlace de recuperación seguro vía Resend API a ${email}. Revisa tu bandeja de entrada.`);
+                alert('Error conectando al servidor: ' + err.message);
             }
-            switchAuthTab('login');
+        }
+
+        async function handleResetPassword(e) {
+            e.preventDefault();
+            const code = document.getElementById('reset-code').value;
+            const new_password = document.getElementById('reset-pass').value;
+
+            try {
+                const res = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: recoverEmailTarget, code, new_password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Contraseña restablecida con éxito! Ya puedes iniciar sesión.');
+                    switchAuthTab('login');
+                } else {
+                    alert('Error: ' + (data.error || 'Código incorrecto'));
+                }
+            } catch (err) {
+                alert('Error en servidor: ' + err.message);
+            }
         }
 
         function handleLogout() {
@@ -941,7 +996,7 @@
                 const res = await fetch('/api/auth/generate-token', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nickname: currentUser.nick })
+                    body: JSON.stringify({ nickname: getNick() })
                 });
                 const data = await res.json();
                 if (res.ok) {
@@ -965,12 +1020,83 @@
             lucide.createIcons();
         }
 
-        function updateDashboardUI() {
+        async function updateDashboardUI() {
             if (currentUser) {
-                document.getElementById('dash-user-nick').innerText = currentUser.nick;
-                document.getElementById('dash-user-email').innerText = currentUser.email;
-                document.getElementById('instruction-nick').innerText = currentUser.nick;
+                document.getElementById('dash-user-nick').innerText = getNick();
+                document.getElementById('dash-user-email').innerText = getEmail();
+                document.getElementById('instruction-nick').innerText = getNick();
+
+                // Cargar evaluaciones reales desde el backend / Supabase
+                try {
+                    const res = await fetch(`/api/user/evaluations?nickname=${encodeURIComponent(getNick())}`);
+                    const evals = await res.json();
+                    renderEvaluations(evals);
+                } catch (e) {
+                    renderEvaluations([]);
+                }
             }
+        }
+
+        function renderEvaluations(evals) {
+            const container = document.getElementById('evaluations-container');
+            if (!container) return;
+
+            if (!evals || evals.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-panel p-8 rounded-3xl border border-gray-800 text-center py-12">
+                        <div class="w-16 h-16 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center mx-auto mb-4 border border-brand-500/30">
+                            <i data-lucide="trophy" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2 font-heading">¡Bienvenido a tu Primer Ensayo!</h3>
+                        <p class="text-sm text-gray-400 max-w-md mx-auto mb-6">
+                            Aún no registras exposiciones en el simulador VR. Presiona el botón <strong>"Generar Clave de 4 Dígitos"</strong> arriba, entra en tus gafas Meta Quest 3 e ingresa con tu nickname <strong class="text-white">${getNick()}</strong>.
+                        </p>
+                    </div>
+                `;
+            } else {
+                const latest = evals[0];
+                container.innerHTML = `
+                    <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold text-white flex items-center space-x-2 font-heading">
+                                <i data-lucide="history" class="w-5 h-5 text-brand-500"></i>
+                                <span>Última Evaluación en VR</span>
+                            </h3>
+                            <span class="text-xs text-gray-400">${new Date(latest.creado_el || Date.now()).toLocaleDateString()}</span>
+                        </div>
+
+                        <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                            <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                <div class="text-xs text-gray-400 mb-1">Puntaje General</div>
+                                <div class="text-3xl font-black text-brand-500 font-heading">${latest.puntaje_general}</div>
+                            </div>
+                            <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                <div class="text-xs text-gray-400 mb-1">Coherencia</div>
+                                <div class="text-3xl font-black text-brand-accent font-heading">${latest.puntaje_coherencia}%</div>
+                            </div>
+                            <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                <div class="text-xs text-gray-400 mb-1">Muletillas Chilenas</div>
+                                <div class="text-3xl font-black text-purple-400 font-heading">${latest.conteo_muletillas}</div>
+                            </div>
+                        </div>
+
+                        <div class="p-4 bg-gray-900/80 rounded-2xl border border-gray-800 mb-6">
+                            <h4 class="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2">Transcripción Registrada por Whisper</h4>
+                            <p class="text-sm text-gray-300 italic">
+                                "${latest.transcripcion}"
+                            </p>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button onclick="downloadPDFReport()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold rounded-xl transition-all border border-gray-700 flex items-center space-x-2">
+                                <i data-lucide="download" class="w-4 h-4 text-brand-500"></i>
+                                <span>Descargar Reporte PDF Certificado</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+            lucide.createIcons();
         }
 
         function handleFileUpload(e) {

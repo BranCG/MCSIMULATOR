@@ -85,6 +85,21 @@ void AVRCharacter::BeginPlay() {
 
   // Ask for Microphone access (essential for Quest build)
   RequestMicrophonePermission();
+
+  // Auto-lock locomotion in LobbyMap if user is not authenticated yet
+  if (UWorld* World = GetWorld()) {
+    FString MapName = World->GetMapName();
+    MapName.RemoveFromStart(World->StreamingLevelsPrefix);
+
+    if (MapName.Contains(TEXT("Lobby"))) {
+      if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(UGameplayStatics::GetGameInstance(World))) {
+        if (!GI->bIsAuthenticated) {
+          SetLocomotionEnabled(false);
+          UE_LOG(LogTemp, Log, TEXT("MC Simulator VR: Movement automatically locked in LobbyMap until authentication."));
+        }
+      }
+    }
+  }
 }
 
 void AVRCharacter::Tick(float DeltaTime) { Super::Tick(DeltaTime); }
@@ -115,7 +130,21 @@ void AVRCharacter::SetupPlayerInputComponent(
   }
 }
 
+void AVRCharacter::SetLocomotionEnabled(bool bEnable) {
+  bLocomotionEnabled = bEnable;
+  if (UCharacterMovementComponent* MovementComp = GetCharacterMovement()) {
+    if (bEnable) {
+      MovementComp->SetMovementMode(MOVE_Walking);
+    } else {
+      MovementComp->DisableMovement();
+    }
+  }
+  UE_LOG(LogTemp, Log, TEXT("MC Simulator VR Locomotion status: %s"), bEnable ? TEXT("ENABLED") : TEXT("DISABLED (Locked)"));
+}
+
 void AVRCharacter::Move(const FVector2D &Value) {
+  if (!bLocomotionEnabled) return;
+
   if (Value.SizeSquared() > 0.001f && VRCamera) {
     const FRotator YawRotation(0.f, VRCamera->GetComponentRotation().Yaw, 0.f);
     const FVector ForwardDirection =

@@ -67,6 +67,12 @@ public:
 	TSubclassOf<class ABreathingOrb> BreathingOrbClass;
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VR|Movement")
+	bool bLocomotionEnabled = true;
+
+	UFUNCTION(BlueprintCallable, Category = "VR|Movement")
+	void SetLocomotionEnabled(bool bEnable);
+
 	UFUNCTION(BlueprintCallable, Category = "VR|Movement")
 	void Move(const FVector2D& Value);
 	UFUNCTION(BlueprintCallable, Category = "VR|Speech")

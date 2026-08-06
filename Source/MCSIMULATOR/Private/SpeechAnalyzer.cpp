@@ -1,187 +1,199 @@
 #include "SpeechAnalyzer.h"
-#include "MCSIMULATORGameInstance.h"
+#include "Async/Async.h"
 #include "BreathingOrb.h"
+#include "Dom/JsonObject.h"
 #include "HttpModule.h"
 #include "Interfaces/IHttpResponse.h"
-#include "Dom/JsonObject.h"
+#include "Kismet/GameplayStatics.h"
+#include "MCSIMULATORGameInstance.h"
+#include "Misc/Base64.h"
 #include "Serialization/JsonReader.h"
 #include "Serialization/JsonSerializer.h"
-#include "Misc/Base64.h"
-#include "Async/Async.h"
-#include "Kismet/GameplayStatics.h"
 
-USpeechAnalyzer::USpeechAnalyzer()
-{
-	PrimaryComponentTick.bCanEverTick = false;
-	
-	// Default configuration
-	ApiEndpointUrl = TEXT("http://127.0.0.1:5000/api/analyze");
-	EvaluationContext = TEXT("General");
+USpeechAnalyzer::USpeechAnalyzer() {
+  PrimaryComponentTick.bCanEverTick = false;
+
+  // Default configuration pointing to remote cloud backend on AWS Lightsail
+  ApiEndpointUrl = TEXT("https://mcsimulator.fimchile.cl/api/analyze");
+  EvaluationContext = TEXT("General");
+
+  // Read URL dynamically from Config/DefaultEngine.ini if present
+  FString ConfigUrl;
+  if (GConfig && GConfig->GetString(TEXT("MCSIMULATOR.Network"), TEXT("BackendApiUrl"), ConfigUrl, GEngineIni)) {
+    if (!ConfigUrl.IsEmpty()) {
+      ApiEndpointUrl = ConfigUrl;
+    }
+  }
 }
 
-void USpeechAnalyzer::BeginPlay()
-{
-	Super::BeginPlay();
+void USpeechAnalyzer::BeginPlay() { Super::BeginPlay(); }
+
+void USpeechAnalyzer::RequestSpeechAnalysis(const TArray<uint8> &RawPCMData) {
+  if (RawPCMData.Num() == 0) {
+    OnAnalysisFailed.Broadcast(
+        TEXT("Speech audio data is empty. Capture failed."));
+    return;
+  }
+
+  if (ApiEndpointUrl.IsEmpty()) {
+    OnAnalysisFailed.Broadcast(TEXT("API Endpoint URL is not configured."));
+    return;
+  }
+
+  FString LocalApiEndpoint = ApiEndpointUrl;
+  FString LocalApiKey = ApiKey;
+  FString LocalContext = EvaluationContext;
+
+  // If context is general/default, retrieve active persistent scenario context
+  // from GameInstance
+  if (LocalContext.Equals(TEXT("General"), ESearchCase::IgnoreCase) ||
+      LocalContext.IsEmpty()) {
+    if (UWorld *World = GetWorld()) {
+      if (UMCSIMULATORGameInstance *GI = Cast<UMCSIMULATORGameInstance>(
+              UGameplayStatics::GetGameInstance(World))) {
+        LocalContext = GI->GetActiveAIContext();
+      }
+    }
+  }
+
+  // Execute heavy Base64 conversion and JSON stringification in a background
+  // thread to prevent VR GameThread hitching
+  Async(EAsyncExecution::Thread, [this, RawPCMData, LocalApiEndpoint,
+                                  LocalApiKey, LocalContext]() {
+    FString AudioBase64 = FBase64::Encode(RawPCMData);
+
+    TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject());
+    JsonRequest->SetStringField(TEXT("audio_base64"), AudioBase64);
+    JsonRequest->SetStringField(TEXT("context"), LocalContext);
+    JsonRequest->SetNumberField(TEXT("sample_rate"), 48000.0);
+    JsonRequest->SetNumberField(TEXT("channels"), 1.0);
+
+    FString RequestBody;
+    TSharedRef<TJsonWriter<>> Writer =
+        TJsonWriterFactory<>::Create(&RequestBody);
+    if (!FJsonSerializer::Serialize(JsonRequest.ToSharedRef(), Writer)) {
+      AsyncTask(ENamedThreads::GameThread, [this]() {
+        OnAnalysisFailed.Broadcast(
+            TEXT("Failed to serialize JSON request payload."));
+      });
+      return;
+    }
+
+    // Dispatch the HTTP request back on the main GameThread
+    AsyncTask(ENamedThreads::GameThread, [this, RequestBody, LocalApiEndpoint,
+                                          LocalApiKey]() {
+      TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
+      Request->OnProcessRequestComplete().BindUObject(
+          this, &USpeechAnalyzer::OnAnalysisResponseReceived);
+      Request->SetURL(LocalApiEndpoint);
+      Request->SetVerb(TEXT("POST"));
+      Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
+
+      if (!LocalApiKey.IsEmpty()) {
+        Request->SetHeader(TEXT("Authorization"),
+                           FString::Printf(TEXT("Bearer %s"), *LocalApiKey));
+      }
+
+      Request->SetContentAsString(RequestBody);
+
+      UE_LOG(
+          LogTemp, Log,
+          TEXT("MC Simulator: Sending HTTP request to %s (Length: %d bytes)."),
+          *LocalApiEndpoint, RequestBody.Len());
+
+      if (!Request->ProcessRequest()) {
+        OnAnalysisFailed.Broadcast(
+            TEXT("Failed to initiate HTTP network connection."));
+      }
+    });
+  });
 }
 
-void USpeechAnalyzer::RequestSpeechAnalysis(const TArray<uint8>& RawPCMData)
-{
-	if (RawPCMData.Num() == 0)
-	{
-		OnAnalysisFailed.Broadcast(TEXT("Speech audio data is empty. Capture failed."));
-		return;
-	}
+void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request,
+                                                 FHttpResponsePtr Response,
+                                                 bool bWasSuccessful) {
+  if (!bWasSuccessful || !Response.IsValid()) {
+    OnAnalysisFailed.Broadcast(
+        TEXT("HTTP request failed. Connection refused or timed out."));
+    return;
+  }
 
-	if (ApiEndpointUrl.IsEmpty())
-	{
-		OnAnalysisFailed.Broadcast(TEXT("API Endpoint URL is not configured."));
-		return;
-	}
+  int32 ResponseCode = Response->GetResponseCode();
+  if (ResponseCode != 200) {
+    FString ErrorText = FString::Printf(
+        TEXT("Server returned error status code: %d"), ResponseCode);
+    UE_LOG(LogTemp, Warning, TEXT("MC Simulator: %s"), *ErrorText);
+    OnAnalysisFailed.Broadcast(ErrorText);
+    return;
+  }
 
-	FString LocalApiEndpoint = ApiEndpointUrl;
-	FString LocalApiKey = ApiKey;
-	FString LocalContext = EvaluationContext;
+  FString ResponseBody = Response->GetContentAsString();
+  TSharedPtr<FJsonObject> JsonObject;
+  TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
 
-	// If context is general/default, retrieve active persistent scenario context from GameInstance
-	if (LocalContext.Equals(TEXT("General"), ESearchCase::IgnoreCase) || LocalContext.IsEmpty())
-	{
-		if (UWorld* World = GetWorld())
-		{
-			if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(UGameplayStatics::GetGameInstance(World)))
-			{
-				LocalContext = GI->GetActiveAIContext();
-			}
-		}
-	}
+  if (FJsonSerializer::Deserialize(Reader, JsonObject) &&
+      JsonObject.IsValid()) {
+    FSpeechAnalysisResult Result;
 
-	// Execute heavy Base64 conversion and JSON stringification in a background thread to prevent VR GameThread hitching
-	Async(EAsyncExecution::Thread, [this, RawPCMData, LocalApiEndpoint, LocalApiKey, LocalContext]()
-	{
-		FString AudioBase64 = FBase64::Encode(RawPCMData);
+    // Extract fields with type safety
+    JsonObject->TryGetStringField(TEXT("transcript"), Result.Transcript);
 
-		TSharedPtr<FJsonObject> JsonRequest = MakeShareable(new FJsonObject());
-		JsonRequest->SetStringField(TEXT("audio_base64"), AudioBase64);
-		JsonRequest->SetStringField(TEXT("context"), LocalContext);
-		JsonRequest->SetNumberField(TEXT("sample_rate"), 48000.0);
-		JsonRequest->SetNumberField(TEXT("channels"), 1.0);
+    double TempOverallScore = 0.0;
+    JsonObject->TryGetNumberField(TEXT("overall_score"), TempOverallScore);
+    Result.OverallScore = static_cast<float>(TempOverallScore);
 
-		FString RequestBody;
-		TSharedRef<TJsonWriter<>> Writer = TJsonWriterFactory<>::Create(&RequestBody);
-		if (!FJsonSerializer::Serialize(JsonRequest.ToSharedRef(), Writer))
-		{
-			AsyncTask(ENamedThreads::GameThread, [this]()
-			{
-				OnAnalysisFailed.Broadcast(TEXT("Failed to serialize JSON request payload."));
-			});
-			return;
-		}
+    double TempCoherenceScore = 0.0;
+    JsonObject->TryGetNumberField(TEXT("coherence_score"), TempCoherenceScore);
+    Result.CoherenceScore = static_cast<float>(TempCoherenceScore);
 
-		// Dispatch the HTTP request back on the main GameThread
-		AsyncTask(ENamedThreads::GameThread, [this, RequestBody, LocalApiEndpoint, LocalApiKey]()
-		{
-			TSharedRef<IHttpRequest> Request = FHttpModule::Get().CreateRequest();
-			Request->OnProcessRequestComplete().BindUObject(this, &USpeechAnalyzer::OnAnalysisResponseReceived);
-			Request->SetURL(LocalApiEndpoint);
-			Request->SetVerb(TEXT("POST"));
-			Request->SetHeader(TEXT("Content-Type"), TEXT("application/json"));
-			
-			if (!LocalApiKey.IsEmpty())
-			{
-				Request->SetHeader(TEXT("Authorization"), FString::Printf(TEXT("Bearer %s"), *LocalApiKey));
-			}
+    double TempFillerWordsCount = 0.0;
+    JsonObject->TryGetNumberField(TEXT("filler_words_count"),
+                                  TempFillerWordsCount);
+    Result.FillerWordsCount = static_cast<int32>(TempFillerWordsCount);
 
-			Request->SetContentAsString(RequestBody);
-			
-			UE_LOG(LogTemp, Log, TEXT("MC Simulator: Sending HTTP request to %s (Length: %d bytes)."), *LocalApiEndpoint, RequestBody.Len());
-			
-			if (!Request->ProcessRequest())
-			{
-				OnAnalysisFailed.Broadcast(TEXT("Failed to initiate HTTP network connection."));
-			}
-		});
-	});
-}
+    JsonObject->TryGetStringField(TEXT("nervousness_feedback"),
+                                  Result.NervousnessFeedback);
+    JsonObject->TryGetStringField(TEXT("semantic_feedback"),
+                                  Result.SemanticFeedback);
 
-void USpeechAnalyzer::OnAnalysisResponseReceived(FHttpRequestPtr Request, FHttpResponsePtr Response, bool bWasSuccessful)
-{
-	if (!bWasSuccessful || !Response.IsValid())
-	{
-		OnAnalysisFailed.Broadcast(TEXT("HTTP request failed. Connection refused or timed out."));
-		return;
-	}
+    // Extract Recommendations array
+    const TArray<TSharedPtr<FJsonValue>> *RecommendationsArray = nullptr;
+    if (JsonObject->TryGetArrayField(TEXT("recommendations"),
+                                     RecommendationsArray) &&
+        RecommendationsArray) {
+      for (const TSharedPtr<FJsonValue> &Val : *RecommendationsArray) {
+        if (Val.IsValid()) {
+          Result.Recommendations.Add(Val->AsString());
+        }
+      }
+    }
 
-	int32 ResponseCode = Response->GetResponseCode();
-	if (ResponseCode != 200)
-	{
-		FString ErrorText = FString::Printf(TEXT("Server returned error status code: %d"), ResponseCode);
-		UE_LOG(LogTemp, Warning, TEXT("MC Simulator: %s"), *ErrorText);
-		OnAnalysisFailed.Broadcast(ErrorText);
-		return;
-	}
+    UE_LOG(
+        LogTemp, Log,
+        TEXT("MC Simulator: Semantic speech analysis completed successfully."));
 
-	FString ResponseBody = Response->GetContentAsString();
-	TSharedPtr<FJsonObject> JsonObject;
-	TSharedRef<TJsonReader<>> Reader = TJsonReaderFactory<>::Create(ResponseBody);
+    if (UWorld *World = GetWorld()) {
+      if (UMCSIMULATORGameInstance *GI =
+              Cast<UMCSIMULATORGameInstance>(World->GetGameInstance())) {
+        GI->SaveAnalysisResult(Result);
+      }
 
-	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
-	{
-		FSpeechAnalysisResult Result;
+      // If Breathing Orb is active in game, hold off on displaying feedback
+      // until meditation completes
+      if (AActor *Orb = UGameplayStatics::GetActorOfClass(
+              World, ABreathingOrb::StaticClass())) {
+        if (!Orb->IsHidden()) {
+          UE_LOG(
+              LogTemp, Log,
+              TEXT("MC Simulator: Breathing Orb is currently active. Holding "
+                   "off 3D screen display until meditation finishes."));
+          return;
+        }
+      }
+    }
 
-		// Extract fields with type safety
-		JsonObject->TryGetStringField(TEXT("transcript"), Result.Transcript);
-
-		double TempOverallScore = 0.0;
-		JsonObject->TryGetNumberField(TEXT("overall_score"), TempOverallScore);
-		Result.OverallScore = static_cast<float>(TempOverallScore);
-
-		double TempCoherenceScore = 0.0;
-		JsonObject->TryGetNumberField(TEXT("coherence_score"), TempCoherenceScore);
-		Result.CoherenceScore = static_cast<float>(TempCoherenceScore);
-
-		double TempFillerWordsCount = 0.0;
-		JsonObject->TryGetNumberField(TEXT("filler_words_count"), TempFillerWordsCount);
-		Result.FillerWordsCount = static_cast<int32>(TempFillerWordsCount);
-
-		JsonObject->TryGetStringField(TEXT("nervousness_feedback"), Result.NervousnessFeedback);
-		JsonObject->TryGetStringField(TEXT("semantic_feedback"), Result.SemanticFeedback);
-
-		// Extract Recommendations array
-		const TArray<TSharedPtr<FJsonValue>>* RecommendationsArray = nullptr;
-		if (JsonObject->TryGetArrayField(TEXT("recommendations"), RecommendationsArray) && RecommendationsArray)
-		{
-			for (const TSharedPtr<FJsonValue>& Val : *RecommendationsArray)
-			{
-				if (Val.IsValid())
-				{
-					Result.Recommendations.Add(Val->AsString());
-				}
-			}
-		}
-
-		UE_LOG(LogTemp, Log, TEXT("MC Simulator: Semantic speech analysis completed successfully."));
-
-		if (UWorld* World = GetWorld())
-		{
-			if (UMCSIMULATORGameInstance* GI = Cast<UMCSIMULATORGameInstance>(World->GetGameInstance()))
-			{
-				GI->SaveAnalysisResult(Result);
-			}
-
-			// If Breathing Orb is active in game, hold off on displaying feedback until meditation completes
-			if (AActor* Orb = UGameplayStatics::GetActorOfClass(World, ABreathingOrb::StaticClass()))
-			{
-				if (!Orb->IsHidden())
-				{
-					UE_LOG(LogTemp, Log, TEXT("MC Simulator: Breathing Orb is currently active. Holding off 3D screen display until meditation finishes."));
-					return;
-				}
-			}
-		}
-
-		OnAnalysisCompleted.Broadcast(Result);
-	}
-	else
-	{
-		OnAnalysisFailed.Broadcast(TEXT("Failed to parse JSON response content."));
-	}
+    OnAnalysisCompleted.Broadcast(Result);
+  } else {
+    OnAnalysisFailed.Broadcast(TEXT("Failed to parse JSON response content."));
+  }
 }

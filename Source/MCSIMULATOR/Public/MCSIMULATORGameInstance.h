@@ -42,6 +42,16 @@ public:
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Analysis")
 	bool bHasCachedAnalysis = false;
 
+	// User Session Data from VR Web Auth
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Session")
+	FString UserNickname;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Session")
+	bool bIsAuthenticated = false;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "MC Simulator|Session")
+	bool bUsePresentationSlides = false;
+
 	// Save analysis result to persistent GameInstance memory
 	UFUNCTION(BlueprintCallable, Category = "MC Simulator|Analysis")
 	void SaveAnalysisResult(const FSpeechAnalysisResult& Result);

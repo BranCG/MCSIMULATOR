@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="es" class="dark scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MC Simulator 2026 | Plataforma de Entrenamiento en Oratoria VR & IA</title>
+    <meta name="description" content="Domina la oratoria y vence el miedo escénico con simuladores de Realidad Virtual e Inteligencia Artificial en tiempo real. Certificado ISO 27001.">
+    
+    <!-- Google Fonts & Tailwind CSS CDN & Lucide Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                            accent: '#06b6d4',
+                            purple: '#a855f7'
+                        },
+                        dark: {
+                            bg: '#090d16',
+                            card: '#111827',
+                            border: '#1f2937',
+                            glow: '#064e3b'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        heading: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #090d16;
+            color: #f3f4f6;
+        }
+        h1, h2, h3, h4, .font-heading {
+            font-family: 'Outfit', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(31, 41, 55, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .neon-glow-green {
+            box-shadow: 0 0 30px -5px rgba(16, 185, 129, 0.3);
+        }
+        .neon-glow-cyan {
+            box-shadow: 0 0 30px -5px rgba(6, 182, 212, 0.3);
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #a855f7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #059669 0%, #0891b2 100%);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1f2937;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white custom-scrollbar">
+
+    <!-- NAVBAR NAVEGACIÓN PRINCIPAL -->
+    <nav class="sticky top-0 z-50 glass-panel border-b border-gray-800/60 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- BRAND LOGO -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('landing')">
+                    <div class="w-11 h-11 rounded-xl gradient-bg flex items-center justify-center shadow-lg shadow-brand-500/20">
+                        <i data-lucide="box" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <span class="text-2xl font-black font-heading tracking-tight text-white">MC SIMULATOR</span>
+                        <span class="ml-1.5 px-2 py-0.5 text-xs font-bold bg-brand-500/20 text-brand-500 rounded-full border border-brand-500/30">2026 VR</span>
+                    </div>
+                </div>
+
+                <!-- NAV LINKS -->
+                <div class="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-300">
+                    <a href="#caracteristicas" class="hover:text-brand-500 transition-colors">Características</a>
+                    <a href="#escenarios" class="hover:text-brand-500 transition-colors">Escenarios VR</a>
+                    <a href="#seguridad" class="hover:text-brand-500 transition-colors">Seguridad ISO 27001</a>
+                    <a href="#planes" class="hover:text-brand-500 transition-colors">Planes & Precios</a>
+                </div>
+
+                <!-- RIGHT ACTION BUTTONS -->
+                <div class="flex items-center space-x-4">
+                    <button id="btn-nav-login" onclick="openAuthModal('login')" class="px-5 py-2.5 text-sm font-semibold text-gray-200 hover:text-white hover:bg-gray-800/60 rounded-xl transition-all border border-gray-700/50">
+                        Iniciar Sesión
+                    </button>
+                    <button id="btn-nav-register" onclick="openAuthModal('register')" class="px-5 py-2.5 text-sm font-bold text-white gradient-bg rounded-xl shadow-lg shadow-brand-500/25 hover:opacity-90 hover:scale-[1.02] transition-all">
+                        Crear Cuenta
+                    </button>
+                    <div id="user-menu" class="hidden flex items-center space-x-3">
+                        <button onclick="navigateTo('dashboard')" class="flex items-center space-x-2 px-4 py-2 bg-brand-500/10 text-brand-500 border border-brand-500/30 rounded-xl font-semibold hover:bg-brand-500/20 transition-all">
+                            <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                            <span id="user-nick-display">@nick</span>
+                        </button>
+                        <button onclick="handleLogout()" class="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all" title="Cerrar Sesión">
+                            <i data-lucide="log-out" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT VIEW CONTAINER -->
+    <main id="main-content" class="flex-grow">
+        
+        <!-- ========================================================= -->
+        <!-- VIEW 1: LANDING PAGE PUBLIC (VITRINA COMERCIAL & MARKETING) -->
+        <!-- ========================================================= -->
+        <section id="view-landing" class="block">
+            <!-- HERO SECTION -->
+            <div class="relative overflow-hidden pt-12 pb-24 lg:pt-20 lg:pb-32">
+                <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-brand-600/20 via-brand-accent/20 to-purple-600/10 blur-[120px] rounded-full pointer-events-none"></div>
+
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+                    <div class="inline-flex items-center space-x-2 px-4 py-2 rounded-full glass-card border border-brand-500/30 text-brand-500 text-xs font-semibold uppercase tracking-wider mb-8">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Entrenamiento de Oratoria de Clase Mundial en VR + IA</span>
+                    </div>
+
+                    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold font-heading tracking-tight text-white max-w-5xl mx-auto leading-tight mb-8">
+                        Domina la Oratoria y Vence el Miedo Escénico con <span class="gradient-text">Realidad Virtual e Inteligencia Artificial</span>
+                    </h1>
+
+                    <p class="text-lg sm:text-xl text-gray-400 max-w-3xl mx-auto font-normal leading-relaxed mb-10">
+                        Practica tus presentaciones en escenarios 3D hiperrealistas con audiencia viva, recibe feedback cuantitativo de la IA de Gemini 2.5 y gestiona la ansiedad con biofeedback de respiración in-situ.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
+                        <button onclick="openAuthModal('register')" class="w-full sm:w-auto px-8 py-4 text-lg font-bold text-white gradient-bg rounded-2xl shadow-xl shadow-brand-500/30 hover:scale-105 transition-all flex items-center justify-center space-x-3">
+                            <span>Comenzar Prueba Gratis</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                        <a href="#caracteristicas" class="w-full sm:w-auto px-8 py-4 text-lg font-semibold text-gray-300 hover:text-white glass-panel hover:bg-gray-800/80 rounded-2xl transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="play-circle" class="w-5 h-5 text-brand-500"></i>
+                            <span>Ver Demostración</span>
+                        </a>
+                    </div>
+
+                    <!-- HERO SHOWCASE BANNER / MOCKUP -->
+                    <div class="relative max-w-5xl mx-auto rounded-3xl overflow-hidden glass-panel border border-gray-700/60 p-4 shadow-2xl neon-glow-green">
+                        <div class="aspect-video rounded-2xl overflow-hidden relative bg-gray-950 flex items-center justify-center group">
+                            <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1600&q=80" alt="Simulador Auditorio VR" class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700">
+                            <div class="absolute inset-0 bg-gradient-to-t from-dark-bg via-transparent to-transparent"></div>
+                            
+                            <div class="absolute bottom-8 left-8 right-8 text-left flex flex-col md:flex-row justify-between items-end gap-4">
+                                <div>
+                                    <div class="inline-flex items-center space-x-2 px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 rounded-full text-xs font-semibold mb-2">
+                                        <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+                                        <span>Simulación VR Activa - Meta Quest 3</span>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-white">Escenario: Auditorio Magno con 200 Asistentes</h3>
+                                </div>
+                                <div class="glass-card px-4 py-3 rounded-xl border border-brand-500/40 flex items-center space-x-3">
+                                    <i data-lucide="activity" class="w-6 h-6 text-brand-500"></i>
+                                    <div>
+                                        <div class="text-xs text-gray-400">Puntaje Oratoria IA</div>
+                                        <div class="text-lg font-bold text-white">88.5 / 100</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ESCENARIOS VR SHOWCASE -->
+            <div id="escenarios" class="py-20 bg-dark-bg/60 border-t border-gray-800/60">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <h2 class="text-4xl font-extrabold font-heading text-white mb-4">Tres Escenarios Inmersivos para Todo Desafío</h2>
+                        <p class="text-gray-400 text-lg">Entrena en entornos virtuales diseñados para desarrollar temple, volumen y dominio escénico.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <!-- CARD 1 -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800 hover:border-brand-500/50 transition-all hover:-translate-y-2">
+                            <div class="h-48 rounded-2xl overflow-hidden mb-6 relative">
+                                <img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=800&q=80" alt="Auditorio" class="w-full h-full object-cover">
+                                <div class="absolute top-3 right-3 bg-dark-bg/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-brand-500 border border-brand-500/30">
+                                    Gran Escala
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Auditorio Magno</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed mb-6">Capacidad para 200 personas. Audiencia 3D reactiva, iluminación de escenario y proyección de PowerPoint en telón gigante.</p>
+                            <div class="flex items-center text-xs text-brand-500 font-semibold space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>Ideal para Conferencias y Tesis</span>
+                            </div>
+                        </div>
+
+                        <!-- CARD 2 -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800 hover:border-brand-500/50 transition-all hover:-translate-y-2">
+                            <div class="h-48 rounded-2xl overflow-hidden mb-6 relative">
+                                <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=800&q=80" alt="Sala de Clases" class="w-full h-full object-cover">
+                                <div class="absolute top-3 right-3 bg-dark-bg/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-brand-accent border border-brand-accent/30">
+                                    Académico
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Sala de Clases</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed mb-6">Entorno docente interactivo. Pizarra dinámica para diapositivas, estudiantes haciendo preguntas y evaluación de contacto visual.</p>
+                            <div class="flex items-center text-xs text-brand-accent font-semibold space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>Ideal para Profesores y Alumnos</span>
+                            </div>
+                        </div>
+
+                        <!-- CARD 3 -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800 hover:border-brand-500/50 transition-all hover:-translate-y-2">
+                            <div class="h-48 rounded-2xl overflow-hidden mb-6 relative">
+                                <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80" alt="Oficina B2B" class="w-full h-full object-cover">
+                                <div class="absolute top-3 right-3 bg-dark-bg/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-purple-400 border border-purple-500/30">
+                                    Ejecutivo B2B
+                                </div>
+                            </div>
+                            <h3 class="text-2xl font-bold text-white mb-3">Entrevista Laboral 1 a 1</h3>
+                            <p class="text-gray-400 text-sm leading-relaxed mb-6">Sala de reuniones ejecutivas. Entrevistador IA evaluando respuestas conductuales con el método STAR y control de nerviosismo.</p>
+                            <div class="flex items-center text-xs text-purple-400 font-semibold space-x-2">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                <span>Ideal para Postulaciones y Pitch</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN CARACTERÍSTICAS TÉCNICAS -->
+            <div id="caracteristicas" class="py-20">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-brand-500/10 text-brand-500 text-xs font-semibold uppercase mb-4">
+                                <i data-lucide="cpu" class="w-4 h-4"></i>
+                                <span>Motor de IA de Nueva Generación</span>
+                            </div>
+                            <h2 class="text-4xl font-extrabold font-heading text-white leading-tight mb-6">
+                                Análisis Semántico & Detección de Muletillas Chilenas
+                            </h2>
+                            <p class="text-gray-400 leading-relaxed mb-8">
+                                Nuestro motor en la nube analiza en menos de 3 segundos tu voz grabada en el visor. Detecta modismos chilenos (*"po", "cachai", "este", "eh"*), mide coherencia temática y entrega sugerencias de mejora personalizada.
+                            </p>
+
+                            <div class="space-y-4">
+                                <div class="flex items-start space-x-4 p-4 glass-card rounded-2xl">
+                                    <div class="p-2 bg-brand-500/20 text-brand-500 rounded-xl">
+                                        <i data-lucide="mic" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-bold mb-1">Whisper Fine-Tuned Local & Nube</h4>
+                                        <p class="text-gray-400 text-sm">Transcripción hiperprecisa adaptada al acento y modismos de Chile y Latinoamérica.</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start space-x-4 p-4 glass-card rounded-2xl">
+                                    <div class="p-2 bg-brand-accent/20 text-brand-accent rounded-xl">
+                                        <i data-lucide="wind" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-bold mb-1">Orbe Neón de Respiración 4-7-8</h4>
+                                        <p class="text-gray-400 text-sm">Biofeedback visual con voz sintética guiada para reducir pulsaciones y ansiedad en VR.</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start space-x-4 p-4 glass-card rounded-2xl">
+                                    <div class="p-2 bg-purple-500/20 text-purple-400 rounded-xl">
+                                        <i data-lucide="presentation" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-white font-bold mb-1">Proyección PowerPoint (.pptx) & Puntero Láser</h4>
+                                        <p class="text-gray-400 text-sm">Subes tu presentación en la web y expones en el telón 3D usando el Clicker VR.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LIVE METRICS DEMO CARD -->
+                        <div class="glass-panel p-8 rounded-3xl border border-gray-700/80 shadow-2xl relative">
+                            <div class="flex justify-between items-center pb-6 border-b border-gray-800">
+                                <div>
+                                    <div class="text-xs text-gray-400">Reporte de Evaluación Generado por Gemini</div>
+                                    <div class="text-xl font-bold text-white">Exposición Tesis de Grado</div>
+                                </div>
+                                <span class="px-3 py-1 bg-brand-500/20 text-brand-500 rounded-full text-xs font-bold border border-brand-500/30">Puntaje: 88.5/100</span>
+                            </div>
+
+                            <div class="py-6 space-y-6">
+                                <div>
+                                    <div class="flex justify-between text-sm mb-2">
+                                        <span class="text-gray-300 font-medium">Coherencia Discursiva</span>
+                                        <span class="text-brand-500 font-bold">92%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-brand-500 rounded-full" style="width: 92%"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div class="flex justify-between text-sm mb-2">
+                                        <span class="text-gray-300 font-medium">Control de Muletillas (Frecuencia Baja)</span>
+                                        <span class="text-brand-accent font-bold">85%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-gray-800 rounded-full overflow-hidden">
+                                        <div class="h-full bg-brand-accent rounded-full" style="width: 85%"></div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 bg-gray-900/80 rounded-2xl border border-gray-800">
+                                    <div class="text-xs text-brand-500 font-bold mb-1 uppercase">Recomendaciones de IA</div>
+                                    <p class="text-xs text-gray-300 leading-relaxed font-sans">
+                                        "Excelente tono y firmeza. Intenta hacer una pausa de 2 segundos al pasar de la introducción a las conclusiones para enfatizar la idea principal."
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN SEGURIDAD & COMPLIANCE ISO 27001 -->
+            <div id="seguridad" class="py-20 bg-dark-bg/80 border-t border-gray-800">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-purple-500/10 text-purple-400 text-xs font-semibold uppercase mb-4 border border-purple-500/20">
+                            <i data-lucide="shield-check" class="w-4 h-4"></i>
+                            <span>Seguridad Corporativa e ISO Compliance</span>
+                        </div>
+                        <h2 class="text-4xl font-extrabold font-heading text-white mb-4">Estándares de Protección de Datos de Nivel Bancario</h2>
+                        <p class="text-gray-400 text-lg">Diseñado bajo los marcos de ciberseguridad internacional ISO/IEC 27001:2022 y OWASP ASVS 4.0.</p>
+                    </div>
+
+                    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-card p-6 rounded-2xl border border-gray-800">
+                            <i data-lucide="lock" class="w-8 h-8 text-brand-500 mb-4"></i>
+                            <h4 class="text-white font-bold mb-2">Cifrado TLS 1.3</h4>
+                            <p class="text-gray-400 text-xs leading-relaxed">Toda la comunicación entre el visor VR y la nube viaja cifrada con claves asimétricas RSA-256.</p>
+                        </div>
+
+                        <div class="glass-card p-6 rounded-2xl border border-gray-800">
+                            <i data-lucide="key" class="w-8 h-8 text-brand-accent mb-4"></i>
+                            <h4 class="text-white font-bold mb-2">Auth MFA & OTP 4 Dígitos</h4>
+                            <p class="text-gray-400 text-xs leading-relaxed">Inicio de sesión en VR libre de contraseñas mediante Tokens dinámicos de 4 dígitos generados desde la web.</p>
+                        </div>
+
+                        <div class="glass-card p-6 rounded-2xl border border-gray-800">
+                            <i data-lucide="mail-check" class="w-8 h-8 text-purple-400 mb-4"></i>
+                            <h4 class="text-white font-bold mb-2">Verificación Resend.com</h4>
+                            <p class="text-gray-400 text-xs leading-relaxed">Validación obligatoria de correo electrónico y recuperación de contraseña vía Resend API con DKIM/SPF.</p>
+                        </div>
+
+                        <div class="glass-card p-6 rounded-2xl border border-gray-800">
+                            <i data-lucide="file-check-2" class="w-8 h-8 text-green-400 mb-4"></i>
+                            <h4 class="text-white font-bold mb-2">ISO 27001 & GDPR</h4>
+                            <p class="text-gray-400 text-xs leading-relaxed">Aislamiento estricto de grabaciones y datos personales por `user_id`. Garantía de privacidad total.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN PLANES Y PRECIOS -->
+            <div id="planes" class="py-24">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="text-center max-w-3xl mx-auto mb-16">
+                        <h2 class="text-4xl font-extrabold font-heading text-white mb-4">Planes Transparentes para Estudiantes y Organizaciones</h2>
+                        <p class="text-gray-400 text-lg">Conecta tu cuenta en la web, paga en pesos chilenos o dólares y genera tu Token de práctica para VR.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8 items-stretch">
+                        <!-- PLAN ESTUDIANTE -->
+                        <div class="glass-panel p-8 rounded-3xl border border-gray-800 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2">Plan Estudiante</h3>
+                                <p class="text-gray-400 text-xs mb-6">Para preparación de tesis, disertaciones y exámenes orales.</p>
+                                <div class="flex items-baseline mb-6">
+                                    <span class="text-4xl font-black text-white font-heading">$14.990</span>
+                                    <span class="text-gray-400 text-sm ml-2">CLP / mes</span>
+                                </div>
+                                <ul class="space-y-3 text-sm text-gray-300 mb-8">
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Acceso a Auditorio y Sala de Clases</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Análisis ilimitado con Gemini 2.5</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Generación de Tokens VR de 4 dígitos</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Biofeedback de respiración 4-7-8</span></li>
+                                </ul>
+                            </div>
+                            <button onclick="openAuthModal('register')" class="w-full py-3.5 px-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all border border-gray-700">
+                                Suscribirme con Webpay
+                            </button>
+                        </div>
+
+                        <!-- PLAN PRO EXECUTIVE (DESTACADO) -->
+                        <div class="glass-panel p-8 rounded-3xl border-2 border-brand-500 shadow-2xl neon-glow-green flex flex-col justify-between relative transform md:-translate-y-4">
+                            <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-500 text-white text-xs font-black uppercase rounded-full tracking-wider shadow-lg">
+                                Más Popular
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2">Plan Pro Executive</h3>
+                                <p class="text-gray-400 text-xs mb-6">Para profesionales, conferencistas y ejecutivos.</p>
+                                <div class="flex items-baseline mb-6">
+                                    <span class="text-4xl font-black text-white font-heading">$29.990</span>
+                                    <span class="text-gray-400 text-sm ml-2">CLP / mes</span>
+                                </div>
+                                <ul class="space-y-3 text-sm text-gray-300 mb-8">
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Todos los escenarios (incluye Entrevista 1a1)</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Proyección de PowerPoint (.pptx) en telón</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Puntero Láser y Clicker VR en 3D</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-500"></i><span>Descarga de Reportes Certificados en PDF</span></li>
+                                </ul>
+                            </div>
+                            <button onclick="openAuthModal('register')" class="w-full py-3.5 px-4 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all">
+                                Obtener Plan Pro
+                            </button>
+                        </div>
+
+                        <!-- PLAN INSTITUCIONAL B2B -->
+                        <div class="glass-panel p-8 rounded-3xl border border-gray-800 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-white mb-2">Institucional B2B</h3>
+                                <p class="text-gray-400 text-xs mb-6">Para Universidades, Colegios y Centros de Capacitación.</p>
+                                <div class="flex items-baseline mb-6">
+                                    <span class="text-3xl font-black text-white font-heading">Cotizar</span>
+                                </div>
+                                <ul class="space-y-3 text-sm text-gray-300 mb-8">
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-accent"></i><span>Múltiples alumnos en Visores VR compartidos</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-accent"></i><span>Panel de Gestión Docente para notas del curso</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-accent"></i><span>Factura Electrónica SII en Chile</span></li>
+                                    <li class="flex items-center space-x-3"><i data-lucide="check" class="w-4 h-4 text-brand-accent"></i><span>Soporte Dedicado y Capacitación</span></li>
+                                </ul>
+                            </div>
+                            <button onclick="alert('Contacta a ventas@fimchile.cl para una cotización corporativa.')" class="w-full py-3.5 px-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl transition-all border border-gray-700">
+                                Contactar Ventas B2B
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================= -->
+        <!-- VIEW 2: PRIVATE DASHBOARD (PANEL DEL ALUMNO / DOCENTE)    -->
+        <!-- ========================================================= -->
+        <section id="view-dashboard" class="hidden py-10">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                <!-- HEADER DASHBOARD & TOKEN GENERATOR BAR -->
+                <div class="glass-panel p-8 rounded-3xl border border-gray-800 mb-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 neon-glow-green">
+                    <div>
+                        <div class="flex items-center space-x-3 mb-2">
+                            <span class="px-3 py-1 bg-green-500/20 text-green-400 border border-green-500/30 text-xs font-bold rounded-full flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                                <span>Suscripción Activa</span>
+                            </span>
+                            <span class="text-gray-400 text-xs" id="dash-user-email">email@dominio.cl</span>
+                        </div>
+                        <h2 class="text-3xl font-bold font-heading text-white">
+                            Panel de Oratoria de <span id="dash-user-nick" class="gradient-text">@nick</span>
+                        </h2>
+                    </div>
+
+                    <!-- BOTÓN TOKEN GENERATOR DE 4 DÍGITOS -->
+                    <div class="w-full lg:w-auto glass-card p-4 rounded-2xl border border-brand-500/40 flex flex-col sm:flex-row items-center gap-4">
+                        <div class="text-center sm:text-left">
+                            <div class="text-xs text-gray-400 uppercase font-bold">Tu Token de Acceso VR</div>
+                            <div id="token-display" class="text-3xl font-black font-mono tracking-widest text-brand-500">----</div>
+                        </div>
+
+                        <button id="btn-generate-token" onclick="generateVRToken()" class="w-full sm:w-auto px-6 py-3 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all flex items-center justify-center space-x-2">
+                            <i data-lucide="key-round" class="w-5 h-5"></i>
+                            <span>Generar Clave de 4 Dígitos</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- DASHBOARD MAIN GRID -->
+                <div class="grid lg:grid-cols-3 gap-8">
+                    <!-- LEFT COLUMN: HISTORIAL DE ENSAYOS -->
+                    <div class="lg:col-span-2 space-y-8">
+                        
+                        <!-- RECENT EVALUATION SUMMARY CARD -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-xl font-bold text-white flex items-center space-x-2">
+                                    <i data-lucide="history" class="w-5 h-5 text-brand-500"></i>
+                                    <span>Última Evaluación en VR</span>
+                                </h3>
+                                <span class="text-xs text-gray-400">Hoy, 18:24 hrs</span>
+                            </div>
+
+                            <div class="grid sm:grid-cols-3 gap-4 mb-6">
+                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                    <div class="text-xs text-gray-400 mb-1">Puntaje General</div>
+                                    <div class="text-3xl font-black text-brand-500 font-heading">88.5</div>
+                                </div>
+                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                    <div class="text-xs text-gray-400 mb-1">Coherencia</div>
+                                    <div class="text-3xl font-black text-brand-accent font-heading">92%</div>
+                                </div>
+                                <div class="p-4 bg-gray-900/60 rounded-2xl border border-gray-800 text-center">
+                                    <div class="text-xs text-gray-400 mb-1">Muletillas Chilenas</div>
+                                    <div class="text-3xl font-black text-purple-400 font-heading">2</div>
+                                </div>
+                            </div>
+
+                            <div class="p-4 bg-gray-900/80 rounded-2xl border border-gray-800 mb-6">
+                                <h4 class="text-xs font-bold text-brand-500 uppercase tracking-wider mb-2">Transcripción Registrada por Whisper</h4>
+                                <p class="text-sm text-gray-300 italic">
+                                    "Estimada comisión, hoy presento los avances de nuestro simulador de realidad virtual enfocado en el desarrollo de habilidades comunicacionales para estudiantes..."
+                                </p>
+                            </div>
+
+                            <div class="flex justify-end">
+                                <button onclick="downloadPDFReport()" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white text-xs font-bold rounded-xl transition-all border border-gray-700 flex items-center space-x-2">
+                                    <i data-lucide="download" class="w-4 h-4 text-brand-500"></i>
+                                    <span>Descargar Reporte PDF Certificado</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SUBIDA DE SLIDES POWERPOINT -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                            <h3 class="text-xl font-bold text-white mb-2 flex items-center space-x-2">
+                                <i data-lucide="file-up" class="w-5 h-5 text-brand-accent"></i>
+                                <span>Cargar Diapositivas PowerPoint (.pptx / .pdf)</span>
+                            </h3>
+                            <p class="text-xs text-gray-400 mb-6">Sube tu presentación para que el telón 3D del Auditorio proyecte tus filminas automáticamente al ingresar en VR.</p>
+
+                            <div class="border-2 border-dashed border-gray-700 hover:border-brand-accent rounded-2xl p-8 text-center bg-gray-900/40 transition-colors cursor-pointer" onclick="document.getElementById('file-pptx').click()">
+                                <i data-lucide="upload-cloud" class="w-12 h-12 text-brand-accent mx-auto mb-3"></i>
+                                <div class="text-sm font-semibold text-white mb-1">Arrastra tu archivo aquí o haz clic para buscar</div>
+                                <div class="text-xs text-gray-500">Soporta .pptx y .pdf (Máx. 50 MB)</div>
+                                <input type="file" id="file-pptx" class="hidden" accept=".pptx,.pdf" onchange="handleFileUpload(event)">
+                            </div>
+                            <div id="file-status" class="mt-4 text-xs font-bold text-brand-500 hidden"></div>
+                        </div>
+
+                    </div>
+
+                    <!-- RIGHT COLUMN: ESTADÍSTICAS E INSTRUCCIONES VR -->
+                    <div class="space-y-8">
+                        
+                        <!-- VR CONNECTION STEPS -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center space-x-2">
+                                <i data-lucide="headset" class="w-5 h-5 text-brand-500"></i>
+                                <span>Pasos para Entrar al Visor VR</span>
+                            </h3>
+
+                            <ol class="space-y-4 text-xs text-gray-300">
+                                <li class="flex items-start space-x-3">
+                                    <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-500 font-bold flex items-center justify-center shrink-0">1</span>
+                                    <span>Presiona el botón <strong>"Generar Clave de 4 Dígitos"</strong> arriba.</span>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-500 font-bold flex items-center justify-center shrink-0">2</span>
+                                    <span>Ponte el visor Meta Quest 3 y abre la app <strong>MC Simulator</strong>.</span>
+                                </li>
+                                <li class="flex items-start space-x-3">
+                                    <span class="w-6 h-6 rounded-full bg-brand-500/20 text-brand-500 font-bold flex items-center justify-center shrink-0">3</span>
+                                    <span>En el Lobby VR, ingresa tu Nickname <strong id="instruction-nick">@nick</strong> y el Token de 4 números.</span>
+                                </li>
+                            </ol>
+                        </div>
+
+                        <!-- PROFILE SUMMARY -->
+                        <div class="glass-panel p-6 rounded-3xl border border-gray-800">
+                            <h3 class="text-lg font-bold text-white mb-4">Información de Cuenta</h3>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between py-2 border-b border-gray-800">
+                                    <span class="text-gray-400">Estado de Cuenta:</span>
+                                    <span class="text-green-400 font-bold">Activa (Pagada)</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-800">
+                                    <span class="text-gray-400">Verificación Email:</span>
+                                    <span class="text-brand-500 font-bold flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> Confirmado por Resend</span>
+                                </div>
+                                <div class="flex justify-between py-2 border-b border-gray-800">
+                                    <span class="text-gray-400">Estándar Seguridad:</span>
+                                    <span class="text-purple-400 font-bold">ISO 27001 / AAL2</span>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER COMPLIANCE -->
+    <footer class="glass-panel border-t border-gray-800/80 py-12 mt-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-lg gradient-bg flex items-center justify-center text-white">
+                    <i data-lucide="box" class="w-5 h-5"></i>
+                </div>
+                <span class="text-lg font-bold font-heading text-white">MC Simulator 2026</span>
+            </div>
+            <div class="text-xs text-gray-500">
+                © 2026 FIM Chile SpA. Todos los derechos reservados. Desarrollado con seguridad ISO/IEC 27001.
+            </div>
+            <div class="flex space-x-6 text-xs text-gray-400">
+                <a href="#seguridad" class="hover:text-white transition-colors">Seguridad ISO 27001</a>
+                <a href="#" class="hover:text-white transition-colors">Términos de Servicio</a>
+                <a href="#" class="hover:text-white transition-colors">Soporte Resend Mail</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================= -->
+    <!-- MODAL AUTENTICACIÓN (LOGIN / REGISTRO / RECUPERACIÓN)    -->
+    <!-- ========================================================= -->
+    <div id="auth-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md p-8 rounded-3xl border border-gray-700 shadow-2xl relative">
+            <button onclick="closeAuthModal()" class="absolute top-6 right-6 text-gray-400 hover:text-white p-2">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <!-- FORMULARIO 1: REGISTRO -->
+            <div id="form-register" class="block">
+                <h3 class="text-2xl font-bold font-heading text-white mb-2">Crear Cuenta en MC Simulator</h3>
+                <p class="text-xs text-gray-400 mb-6">Registra tu Nickname único para generar tus accesos a VR.</p>
+
+                <form onsubmit="handleRegister(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Nombre Completo</label>
+                        <input type="text" id="reg-name" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="Brandon Pérez">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Correo Electrónico</label>
+                        <input type="email" id="reg-email" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="brandon@dominio.cl">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Nickname Único para VR (ej: @brandon_tech)</label>
+                        <input type="text" id="reg-nick" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="@brandon_tech">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Contraseña</label>
+                        <input type="password" id="reg-pass" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all text-sm">
+                        Registrarme y Verificar Email
+                    </button>
+                </form>
+                <div class="mt-4 text-center text-xs text-gray-400">
+                    ¿Ya tienes cuenta? <button onclick="switchAuthTab('login')" class="text-brand-500 font-bold">Inicia Sesión</button>
+                </div>
+            </div>
+
+            <!-- FORMULARIO 2: VERIFICACIÓN EMAIL (RESEND API STYLE) -->
+            <div id="form-verify" class="hidden text-center">
+                <div class="w-12 h-12 bg-brand-500/20 text-brand-500 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-brand-500/30">
+                    <i data-lucide="mail-check" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-2xl font-bold font-heading text-white mb-2">Verifica tu Correo</h3>
+                <p class="text-xs text-gray-400 mb-6">Hemos enviado un código de verificación por correo usando <strong>Resend.com</strong> a <span id="verify-email-target" class="text-white font-bold"></span>.</p>
+
+                <form onsubmit="handleVerifyCode(event)" class="space-y-4">
+                    <input type="text" id="verify-code" maxlength="6" required class="w-full px-4 py-3 bg-gray-900 border border-brand-500 text-center font-mono text-2xl tracking-widest rounded-xl text-white focus:outline-none" placeholder="123456">
+                    <button type="submit" class="w-full py-3.5 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all text-sm">
+                        Confirmar Código
+                    </button>
+                </form>
+            </div>
+
+            <!-- FORMULARIO 3: LOGIN -->
+            <div id="form-login" class="hidden">
+                <h3 class="text-2xl font-bold font-heading text-white mb-2">Iniciar Sesión</h3>
+                <p class="text-xs text-gray-400 mb-6">Accede a tu Dashboard para generar tu Token VR.</p>
+
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Correo Electrónico o Nickname</label>
+                        <input type="text" id="login-id" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="brandon@dominio.cl o @brandon_tech">
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-gray-300">Contraseña</label>
+                            <button type="button" onclick="switchAuthTab('recover')" class="text-xs text-brand-500 hover:underline">¿Olvidaste tu clave?</button>
+                        </div>
+                        <input type="password" id="login-pass" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 gradient-bg text-white font-bold rounded-xl shadow-lg hover:opacity-90 transition-all text-sm">
+                        Ingresar al Dashboard
+                    </button>
+                </form>
+                <div class="mt-4 text-center text-xs text-gray-400">
+                    ¿No tienes cuenta? <button onclick="switchAuthTab('register')" class="text-brand-500 font-bold">Regístrate gratis</button>
+                </div>
+            </div>
+
+            <!-- FORMULARIO 4: RECUPERAR CONTRASEÑA -->
+            <div id="form-recover" class="hidden">
+                <h3 class="text-2xl font-bold font-heading text-white mb-2">Recuperar Contraseña</h3>
+                <p class="text-xs text-gray-400 mb-6">Te enviaremos un enlace de recuperación seguro vía <strong>Resend Mail API</strong>.</p>
+
+                <form onsubmit="handleRecoverPassword(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Correo Electrónico Registrado</label>
+                        <input type="email" id="recover-email" required class="w-full px-4 py-3 bg-gray-900 border border-gray-800 rounded-xl text-white text-sm focus:border-brand-500 focus:outline-none" placeholder="brandon@dominio.cl">
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-brand-accent hover:bg-cyan-600 text-white font-bold rounded-xl shadow-lg transition-all text-sm">
+                        Enviar Enlace de Recuperación
+                    </button>
+                </form>
+                <div class="mt-4 text-center text-xs text-gray-400">
+                    <button onclick="switchAuthTab('login')" class="text-gray-300 hover:text-white">Volver al inicio de sesión</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- APP JAVASCRIPT LOGIC -->
+    <script>
+        // ESTADO DE APLICACIÓN LOCAL
+        let currentUser = JSON.parse(localStorage.getItem('mc_user')) || null;
+        let activeVRToken = null;
+
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            checkUserSession();
+        });
+
+        // NAVEGACIÓN DE VISTAS
+        function navigateTo(view) {
+            document.getElementById('view-landing').classList.add('hidden');
+            document.getElementById('view-dashboard').classList.add('hidden');
+
+            if (view === 'dashboard' && currentUser) {
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                updateDashboardUI();
+            } else {
+                document.getElementById('view-landing').classList.remove('hidden');
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // CONTROL DE SESIÓN DE USUARIO
+        function checkUserSession() {
+            const navLogin = document.getElementById('btn-nav-login');
+            const navRegister = document.getElementById('btn-nav-register');
+            const userMenu = document.getElementById('user-menu');
+
+            if (currentUser) {
+                navLogin.classList.add('hidden');
+                navRegister.classList.add('hidden');
+                userMenu.classList.remove('hidden');
+                document.getElementById('user-nick-display').innerText = currentUser.nick;
+            } else {
+                navLogin.classList.remove('hidden');
+                navRegister.classList.remove('hidden');
+                userMenu.classList.add('hidden');
+            }
+        }
+
+        // MODAL AUTENTICACIÓN
+        function openAuthModal(tab) {
+            document.getElementById('auth-modal').classList.remove('hidden');
+            switchAuthTab(tab);
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal').classList.add('hidden');
+        }
+
+        function switchAuthTab(tab) {
+            document.getElementById('form-register').classList.add('hidden');
+            document.getElementById('form-verify').classList.add('hidden');
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-recover').classList.add('hidden');
+
+            if (tab === 'register') document.getElementById('form-register').classList.remove('hidden');
+            if (tab === 'verify') document.getElementById('form-verify').classList.remove('hidden');
+            if (tab === 'login') document.getElementById('form-login').classList.remove('hidden');
+            if (tab === 'recover') document.getElementById('form-recover').classList.remove('hidden');
+        }
+
+        // HANDLERS DE FORMULARIOS
+        function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            let nick = document.getElementById('reg-nick').value;
+            if (!nick.startsWith('@')) nick = '@' + nick;
+
+            currentUser = { name, email, nick, verified: false };
+            document.getElementById('verify-email-target').innerText = email;
+            switchAuthTab('verify');
+        }
+
+        function handleVerifyCode(e) {
+            e.preventDefault();
+            if (currentUser) {
+                currentUser.verified = true;
+                localStorage.setItem('mc_user', JSON.stringify(currentUser));
+                checkUserSession();
+                closeAuthModal();
+                navigateTo('dashboard');
+                alert('¡Correo verificado con éxito vía Resend! Bienvenido a tu Dashboard de Oratoria.');
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const input = document.getElementById('login-id').value;
+            currentUser = {
+                name: 'Brandon Pérez',
+                email: input.includes('@') ? input : 'brandon@fimchile.cl',
+                nick: input.startsWith('@') ? input : '@brandon_tech',
+                verified: true
+            };
+            localStorage.setItem('mc_user', JSON.stringify(currentUser));
+            checkUserSession();
+            closeAuthModal();
+            navigateTo('dashboard');
+        }
+
+        function handleRecoverPassword(e) {
+            e.preventDefault();
+            const email = document.getElementById('recover-email').value;
+            alert(`Hemos enviado un enlace de recuperación seguro vía Resend API a ${email}. Revisa tu bandeja de entrada.`);
+            switchAuthTab('login');
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('mc_user');
+            currentUser = null;
+            checkUserSession();
+            navigateTo('landing');
+        }
+
+        // GENERADOR DE TOKEN VR DE 4 DÍGITOS
+        function generateVRToken() {
+            const randomToken = Math.floor(1000 + Math.random() * 9000).toString();
+            activeVRToken = randomToken;
+            document.getElementById('token-display').innerText = randomToken;
+            
+            const btn = document.getElementById('btn-generate-token');
+            btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>¡Token Activado!</span>';
+            setTimeout(() => {
+                btn.innerHTML = '<i data-lucide="key-round" class="w-5 h-5"></i><span>Generar Clave de 4 Dígitos</span>';
+                lucide.createIcons();
+            }, 3000);
+            lucide.createIcons();
+        }
+
+        function updateDashboardUI() {
+            if (currentUser) {
+                document.getElementById('dash-user-nick').innerText = currentUser.nick;
+                document.getElementById('dash-user-email').innerText = currentUser.email;
+                document.getElementById('instruction-nick').innerText = currentUser.nick;
+            }
+        }
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const status = document.getElementById('file-status');
+                status.innerText = `¡Archivo "${file.name}" cargado exitosamente! Las diapositivas se proyectarán al ingresar en VR.`;
+                status.classList.remove('hidden');
+            }
+        }
+
+        function downloadPDFReport() {
+            alert('Generando y descargando Reporte de Oratoria en formato PDF Certificado por FIM Chile...');
+        }
+    </script>
+</body>
+</html>

@@ -40,8 +40,8 @@ Plugins/*/Intermediate/
 Plugins/*/Saved/
 
 # Security & Backend Secrets
-backend/server.py
-backend/*.py
-!.gitignore
 .env
 *.env
+backend/venv/
+backend/__pycache__/
+backend/whisper-chileno-final/

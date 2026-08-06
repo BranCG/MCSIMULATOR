@@ -11,6 +11,7 @@
 #include "MotionControllerComponent.h"
 #include "SpeechRecorderComponent.h"
 #include "VRFeedbackActor.h"
+#include "Components/WidgetInteractionComponent.h"
 
 #if PLATFORM_ANDROID
 #include "AndroidPermissionCallbackProxy.h"
@@ -64,6 +65,13 @@ AVRCharacter::AVRCharacter() {
   // Mic Recorder Component
   SpeechRecorder =
       CreateDefaultSubobject<USpeechRecorderComponent>(TEXT("SpeechRecorder"));
+
+  // Widget Interaction Component (Laser Pointer for 3D UMG UI)
+  WidgetInteraction =
+      CreateDefaultSubobject<UWidgetInteractionComponent>(TEXT("WidgetInteraction"));
+  WidgetInteraction->SetupAttachment(RightController);
+  WidgetInteraction->InteractionDistance = 500.0f;
+  WidgetInteraction->bShowDebug = true;
 }
 
 void AVRCharacter::BeginPlay() {
@@ -219,11 +227,15 @@ void AVRCharacter::StopRecordingSpeech() {
 }
 
 void AVRCharacter::OnTriggerStarted() {
-  // Trigger action logic (e.g. pointer click)
+  if (WidgetInteraction) {
+    WidgetInteraction->PressPointerKey(EKeys::LeftMouseButton);
+  }
 }
 
 void AVRCharacter::OnTriggerReleased() {
-  // Release action logic
+  if (WidgetInteraction) {
+    WidgetInteraction->ReleasePointerKey(EKeys::LeftMouseButton);
+  }
 }
 
 void AVRCharacter::OnGrabTriggered() {

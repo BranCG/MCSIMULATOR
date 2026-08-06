@@ -75,7 +75,7 @@ void UVRAuthClient::OnTokenVerifyResponseReceived(FHttpRequestPtr Request, FHttp
 
 	if (FJsonSerializer::Deserialize(Reader, JsonObject) && JsonObject.IsValid())
 	{
-		bool bValid = JsonObject->HasField(TEXT("valid")) ? JsonObject->GetBooleanField(TEXT("valid")) : false;
+		bool bValid = JsonObject->HasTypedField<EJson::Boolean>(TEXT("valid")) ? JsonObject->GetBoolField(TEXT("valid")) : false;
 		if (bValid && ResponseCode == 200)
 		{
 			FString Nickname = JsonObject->HasField(TEXT("nickname")) ? JsonObject->GetStringField(TEXT("nickname")) : TEXT("@usuario");

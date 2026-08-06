@@ -207,7 +207,7 @@ def verify_code():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-# 3. LOGIN
+# 3. LOGIN (CORREO O NICKNAME CON/SIN @)
 @app.route('/api/auth/login', methods=['POST'])
 def login():
     try:
@@ -215,10 +215,17 @@ def login():
         login_id = datos.get('login_id', '').strip()
         password = datos.get('password')
 
-        if login_id.startswith('@'):
-            url = f"{SUPABASE_URL}/rest/v1/perfiles?nickname=eq.{login_id}&select=*"
-        else:
+        if not login_id or not password:
+            return jsonify({"error": "Debe ingresar usuario/correo y contraseña"}), 400
+
+        # Determinar si el login_id es un correo electrónico o un nickname
+        if '@' in login_id and not login_id.startswith('@') and '.' in login_id.split('@')[1]:
+            # Es un correo electrónico (ej: brandon@gmail.com)
             url = f"{SUPABASE_URL}/rest/v1/perfiles?correo=eq.{login_id.lower()}&select=*"
+        else:
+            # Es un nickname (ej: @brandon_tech o brandon_tech)
+            nick = login_id if login_id.startswith('@') else '@' + login_id
+            url = f"{SUPABASE_URL}/rest/v1/perfiles?nickname=eq.{nick}&select=*"
 
         res = requests.get(url, headers=supabase_headers(), timeout=10)
         perfiles = res.json()

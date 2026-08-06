@@ -836,12 +836,10 @@
                     document.getElementById('verify-email-target').innerText = email;
                     switchAuthTab('verify');
                 } else {
-                    alert('Error en registro: ' + (data.error || 'No se pudo crear la cuenta'));
+                    alert('Atención: ' + (data.error || 'No se pudo crear la cuenta'));
                 }
             } catch (err) {
-                currentUser = { name, email, nick, verified: false };
-                document.getElementById('verify-email-target').innerText = email;
-                switchAuthTab('verify');
+                alert('Error conectando al servidor: ' + err.message);
             }
         }
 

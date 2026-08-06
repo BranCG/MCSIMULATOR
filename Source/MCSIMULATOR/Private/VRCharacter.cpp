@@ -68,11 +68,11 @@ AVRCharacter::AVRCharacter() {
       CreateDefaultSubobject<USpeechRecorderComponent>(TEXT("SpeechRecorder"));
 
   // Widget Interaction Component (Laser Pointer for 3D UMG UI)
-  WidgetInteraction =
-      CreateDefaultSubobject<UWidgetInteractionComponent>(TEXT("WidgetInteraction"));
-  WidgetInteraction->SetupAttachment(RightController);
-  WidgetInteraction->InteractionDistance = 500.0f;
-  WidgetInteraction->bShowDebug = true;
+  VRWidgetInteraction =
+      CreateDefaultSubobject<UWidgetInteractionComponent>(TEXT("VRWidgetInteraction"));
+  VRWidgetInteraction->SetupAttachment(RightController);
+  VRWidgetInteraction->InteractionDistance = 500.0f;
+  VRWidgetInteraction->bShowDebug = true;
 }
 
 void AVRCharacter::BeginPlay() {
@@ -228,14 +228,14 @@ void AVRCharacter::StopRecordingSpeech() {
 }
 
 void AVRCharacter::OnTriggerStarted() {
-  if (WidgetInteraction) {
-    WidgetInteraction->PressPointerKey(EKeys::LeftMouseButton);
+  if (VRWidgetInteraction) {
+    VRWidgetInteraction->PressPointerKey(EKeys::LeftMouseButton);
   }
 }
 
 void AVRCharacter::OnTriggerReleased() {
-  if (WidgetInteraction) {
-    WidgetInteraction->ReleasePointerKey(EKeys::LeftMouseButton);
+  if (VRWidgetInteraction) {
+    VRWidgetInteraction->ReleasePointerKey(EKeys::LeftMouseButton);
   }
 }
 

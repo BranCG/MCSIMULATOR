@@ -47,7 +47,7 @@ public:
 
 	// VR 3D UMG Widget Laser Pointer Interaction
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VR|Interaction")
-	class UWidgetInteractionComponent* WidgetInteraction;
+	class UWidgetInteractionComponent* VRWidgetInteraction;
 
 	// Speech System
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Speech")

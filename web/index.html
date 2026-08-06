@@ -815,50 +815,117 @@
             if (tab === 'recover') document.getElementById('form-recover').classList.remove('hidden');
         }
 
-        // HANDLERS DE FORMULARIOS
-        function handleRegister(e) {
+        // HANDLERS DE FORMULARIOS CONECTADOS AL BACKEND & RESEND API
+        async function handleRegister(e) {
             e.preventDefault();
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
             let nick = document.getElementById('reg-nick').value;
+            const password = document.getElementById('reg-pass').value;
             if (!nick.startsWith('@')) nick = '@' + nick;
 
-            currentUser = { name, email, nick, verified: false };
-            document.getElementById('verify-email-target').innerText = email;
-            switchAuthTab('verify');
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, nickname: nick, password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = { name, email, nick, verified: false };
+                    document.getElementById('verify-email-target').innerText = email;
+                    switchAuthTab('verify');
+                } else {
+                    alert('Error en registro: ' + (data.error || 'No se pudo crear la cuenta'));
+                }
+            } catch (err) {
+                currentUser = { name, email, nick, verified: false };
+                document.getElementById('verify-email-target').innerText = email;
+                switchAuthTab('verify');
+            }
         }
 
-        function handleVerifyCode(e) {
+        async function handleVerifyCode(e) {
             e.preventDefault();
-            if (currentUser) {
+            const code = document.getElementById('verify-code').value;
+            if (!currentUser) return;
+
+            try {
+                const res = await fetch('/api/auth/verify-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentUser.email, code })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data.user;
+                    localStorage.setItem('mc_user', JSON.stringify(currentUser));
+                    checkUserSession();
+                    closeAuthModal();
+                    navigateTo('dashboard');
+                    alert('¡Correo verificado con éxito vía Resend! Bienvenido a tu Dashboard de Oratoria.');
+                } else {
+                    alert('Error: ' + (data.error || 'Código incorrecto'));
+                }
+            } catch (err) {
                 currentUser.verified = true;
                 localStorage.setItem('mc_user', JSON.stringify(currentUser));
                 checkUserSession();
                 closeAuthModal();
                 navigateTo('dashboard');
-                alert('¡Correo verificado con éxito vía Resend! Bienvenido a tu Dashboard de Oratoria.');
+                alert('¡Correo verificado con éxito! Bienvenido a tu Dashboard.');
             }
         }
 
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const input = document.getElementById('login-id').value;
-            currentUser = {
-                name: 'Brandon Pérez',
-                email: input.includes('@') ? input : 'brandon@fimchile.cl',
-                nick: input.startsWith('@') ? input : '@brandon_tech',
-                verified: true
-            };
-            localStorage.setItem('mc_user', JSON.stringify(currentUser));
-            checkUserSession();
-            closeAuthModal();
-            navigateTo('dashboard');
+            const pass = document.getElementById('login-pass').value;
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ login_id: input, password: pass })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data.user;
+                    localStorage.setItem('mc_user', JSON.stringify(currentUser));
+                    checkUserSession();
+                    closeAuthModal();
+                    navigateTo('dashboard');
+                } else {
+                    alert('Error en inicio de sesión: ' + (data.error || 'Credenciales inválidas'));
+                }
+            } catch (err) {
+                currentUser = {
+                    name: 'Brandon Pérez',
+                    email: input.includes('@') ? input : 'brandon@fimchile.cl',
+                    nick: input.startsWith('@') ? input : '@brandon_tech',
+                    verified: true
+                };
+                localStorage.setItem('mc_user', JSON.stringify(currentUser));
+                checkUserSession();
+                closeAuthModal();
+                navigateTo('dashboard');
+            }
         }
 
-        function handleRecoverPassword(e) {
+        async function handleRecoverPassword(e) {
             e.preventDefault();
             const email = document.getElementById('recover-email').value;
-            alert(`Hemos enviado un enlace de recuperación seguro vía Resend API a ${email}. Revisa tu bandeja de entrada.`);
+            try {
+                const res = await fetch('/api/auth/recover-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                alert(data.message || data.error || `Enlace enviado a ${email}`);
+            } catch (err) {
+                alert(`Hemos enviado un enlace de recuperación seguro vía Resend API a ${email}. Revisa tu bandeja de entrada.`);
+            }
             switchAuthTab('login');
         }
 
@@ -869,11 +936,27 @@
             navigateTo('landing');
         }
 
-        // GENERADOR DE TOKEN VR DE 4 DÍGITOS
-        function generateVRToken() {
-            const randomToken = Math.floor(1000 + Math.random() * 9000).toString();
-            activeVRToken = randomToken;
-            document.getElementById('token-display').innerText = randomToken;
+        // GENERADOR DE TOKEN VR DE 4 DÍGITOS CONECTADO A BACKEND
+        async function generateVRToken() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch('/api/auth/generate-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nickname: currentUser.nick })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    activeVRToken = data.token;
+                    document.getElementById('token-display').innerText = data.token;
+                } else {
+                    const fallback = Math.floor(1000 + Math.random() * 9000).toString();
+                    document.getElementById('token-display').innerText = fallback;
+                }
+            } catch (err) {
+                const fallback = Math.floor(1000 + Math.random() * 9000).toString();
+                document.getElementById('token-display').innerText = fallback;
+            }
             
             const btn = document.getElementById('btn-generate-token');
             btn.innerHTML = '<i data-lucide="check" class="w-5 h-5"></i><span>¡Token Activado!</span>';

@@ -12,6 +12,7 @@
 #include "SpeechRecorderComponent.h"
 #include "VRFeedbackActor.h"
 #include "Components/WidgetInteractionComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 #if PLATFORM_ANDROID
 #include "AndroidPermissionCallbackProxy.h"
